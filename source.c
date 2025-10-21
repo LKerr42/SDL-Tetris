@@ -7,12 +7,10 @@
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 
-#define TETROMINO_BLOCK_SIZE 10
-
-SDL_FRect rects[5];
+#define TETROMINO_BLOCK_SIZE 20
 
 int width = 640, height = 480;
-int gridWidth, gridHeight; 
+int gWidthMin, gWidthMax, gHeightMin, gHeightMax; 
 
 typedef struct {
     int x;
@@ -22,10 +20,15 @@ blockPos gridPos;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
-    gridPos.x = 20;
-    gridPos.y = 0;
-    gridWidth = width % TETROMINO_BLOCK_SIZE;
-    gridHeight = height % TETROMINO_BLOCK_SIZE;
+    gWidthMin = ((width / TETROMINO_BLOCK_SIZE) / 2) - 5;
+    gWidthMax = ((width / TETROMINO_BLOCK_SIZE) / 2) + 5;
+
+    gHeightMin = ((height / TETROMINO_BLOCK_SIZE) / 2) - 10;
+    gHeightMax = ((height / TETROMINO_BLOCK_SIZE) / 2) + 10;
+
+    gridPos.x = (width / TETROMINO_BLOCK_SIZE) / 2;
+    gridPos.y = gHeightMin;
+
     SDL_SetAppMetadata("Play Tetis!", "0.1.2", "com.github.SDL-Tetris.LKerr42");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -48,6 +51,29 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
+void handleKeyboardInput(SDL_Scancode event) {
+    switch (event) {
+        case SDL_SCANCODE_LEFT: {
+            if (gridPos.x - 1 >= gWidthMin) {
+                gridPos.x = gridPos.x - 1;
+            }
+            break;
+        }
+        case SDL_SCANCODE_RIGHT: {
+            if (gridPos.x + 1 <= gWidthMax) {
+                gridPos.x = gridPos.x + 1;
+            }
+            break;
+        }
+        case SDL_SCANCODE_DOWN: {
+            if (gridPos.y + 1 <= gHeightMax) {
+                gridPos.y = gridPos.y + 1;
+            } 
+            break;
+        }
+    }
+}
+
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     switch (event->type) {
@@ -56,48 +82,14 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             break;
         }
         case SDL_EVENT_KEY_DOWN: {
-            switch (event->key.scancode) {
-                case SDL_SCANCODE_LEFT: {
-                    if (gridPos.x - 1 >= 0) {
-                        gridPos.x = gridPos.x - 1;
-                        printf("%d - 1 >= %d\n", gridPos.x, 0);
-                    } else {
-                        printf("%d - 1 >/= %d\n", gridPos.x, 0);
-                    }
-                    printf("Left pressed\n");
-                    break;
-                }
-                case SDL_SCANCODE_RIGHT: {
-                    if (gridPos.x + 1 <= gridWidth) {
-                        gridPos.x = gridPos.x + 1;
-                        printf("%d + 1 <= %d\n", gridPos.x, gridWidth);
-                    } else {
-                        printf("%d + 1 </= %d\n", gridPos.x, gridWidth);
-                    }
-                    printf("Right pressed\n");
-                    break;
-                }
-                case SDL_SCANCODE_UP: {
-                    if (gridPos.y - 1 >= 0) {
-                        gridPos.y = gridPos.y - 1;
-                        printf("%d - 1 >= %d\n", gridPos.y, 0);
-                    } else {
-                        printf("%d - 1 >/= %d\n", gridPos.y, 0);
-                    }
-                    printf("Up pressed\n");
-                    break;
-                }
-                case SDL_SCANCODE_DOWN: {
-                    if (gridPos.y + 1 <= gridHeight) {
-                        gridPos.y = gridPos.y + 1;
-                        printf("%d + 1 <= %d\n", gridPos.y, gridWidth);
-                    } else {
-                        printf("%d + 1 </= %d\n", gridPos.y, gridWidth);
-                    }
-                    printf("Down pressed\n");
-                    break;
-                }
-            }
+            handleKeyboardInput(event->key.scancode);
+            break;
+        }
+        case SDL_EVENT_WINDOW_RESIZED: {
+            SDL_GetWindowSize(window, &width, &height);
+            gridPos.x = (width / TETROMINO_BLOCK_SIZE) / 2;
+            gridPos.y = (height / TETROMINO_BLOCK_SIZE) / 2;
+            break;
         }
     }
 
@@ -107,16 +99,16 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_GetWindowSize(window, &width, &height);
+    SDL_FRect rects[300];
 
-    gridWidth = width / TETROMINO_BLOCK_SIZE;
-    gridHeight = height / TETROMINO_BLOCK_SIZE;
+    gWidthMin = ((width / TETROMINO_BLOCK_SIZE) / 2) - 5;
+    gWidthMax = ((width / TETROMINO_BLOCK_SIZE) / 2) + 5;
+
+    gHeightMin = ((height / TETROMINO_BLOCK_SIZE) / 2) - 10;
+    gHeightMax = ((height / TETROMINO_BLOCK_SIZE) / 2) + 10;
     const Uint64 rn = SDL_GetTicks();
 
-    /*if (rn % 1000 == 0) {
-        printf("gridPos: %d, %d", gridWidth, gridHeight);
-    }*/
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // blue, full alpha
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
     SDL_RenderClear(renderer);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_OPAQUE);  // blue, full alpha
@@ -125,6 +117,25 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     rects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;
 
     SDL_RenderFillRect(renderer, &rects[0]); // render rectangle
+
+    int rectCount = 0;
+    for (int i = gHeightMin-1; i <= gHeightMax+1; i++) {
+        for (int j = gWidthMin-1; j <= gWidthMax+1; j++) {
+            if (i == gHeightMin-1 || i == gHeightMax+1 || j == gWidthMin-1 || j == gWidthMax+1) {
+                rects[rectCount].x = j * TETROMINO_BLOCK_SIZE;
+                rects[rectCount].y = i * TETROMINO_BLOCK_SIZE;
+                rects[rectCount].w = rects[rectCount].h = TETROMINO_BLOCK_SIZE;
+                rectCount++;
+            }
+        }
+    }
+
+    /*rects[0].x = (gWidthMin-1) * TETROMINO_BLOCK_SIZE;
+    rects[0].y = (gHeightMin-1) * TETROMINO_BLOCK_SIZE;
+    rects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;*/
+
+    SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE);  // white, full alpha
+    SDL_RenderFillRects(renderer, rects, SDL_arraysize(rects));
 
     SDL_RenderPresent(renderer); // render everything
 
