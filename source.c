@@ -9,16 +9,25 @@ static SDL_Renderer *renderer = NULL;
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
 
+int width, height;
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
-    SDL_SetAppMetadata("Play Tetis!", "0.1", "com.github.SDL-Tetris.LKerr42");
+    SDL_SetAppMetadata("Play Tetis!", "0.1.2", "com.github.SDL-Tetris.LKerr42");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
-    if (!SDL_CreateWindowAndRenderer("examples/renderer/rectangles", WINDOW_WIDTH, WINDOW_HEIGHT, 0, &window, &renderer)) {
+    bool wind = SDL_CreateWindowAndRenderer(
+        "Play Tetris!", 
+        WINDOW_WIDTH, WINDOW_HEIGHT, 
+        SDL_WINDOW_RESIZABLE,
+        &window, &renderer
+    );
+
+    if (!wind) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
@@ -28,23 +37,28 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
-    if (event->type == SDL_EVENT_QUIT) {
-        return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+    SDL_GetWindowSize(window, &width, &height);
+    switch (event->type) {
+        case SDL_EVENT_QUIT: {
+            return SDL_APP_SUCCESS; /* end the program, reporting success to the OS. */
+        }
     }
+
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
+    SDL_GetWindowSize(window, &width, &height);
     SDL_FRect rects[5];
     const Uint64 rn = SDL_GetTicks();
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_OPAQUE); //set colour then dimentions
-    rects[0].x = (WINDOW_WIDTH / 2) - 100;
-    rects[0].y = (WINDOW_HEIGHT / 2) - 100;
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_OPAQUE);  // blue, full alpha
+    rects[0].x = (width - 100) / 2;
+    rects[0].y = (height - 100) / 2;
     rects[0].w = rects[0].h = 100;
 
-    SDL_RenderRect(renderer, &rects[0]); // render rectangle
+    SDL_RenderFillRect(renderer, &rects[0]); // render rectangle
 
     SDL_RenderPresent(renderer); // render everything
 
