@@ -8,6 +8,8 @@ static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 
 #define TETROMINO_BLOCK_SIZE 20
+#define GRID_HEIGHT 22
+#define GRID_WIDTH  12
 
 int width = 640, height = 480;
 int gWidthMin, gWidthMax, gHeightMin, gHeightMax; 
@@ -96,18 +98,50 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
+int convertGridPosYToArray(int posY) {
+    return posY - gHeightMin;
+}
+int convertGridPosXToArray(int posX) {
+    return posX - gWidthMin;
+}
+
+SDL_FRect setRects[300];
+int filledBlocks[22][12] = {}, falling = true;
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_GetWindowSize(window, &width, &height);
-    SDL_FRect rects[300];
+    SDL_FRect rects[10];
 
     gWidthMin = ((width / TETROMINO_BLOCK_SIZE) / 2) - 5;
     gWidthMax = ((width / TETROMINO_BLOCK_SIZE) / 2) + 5;
 
     gHeightMin = ((height / TETROMINO_BLOCK_SIZE) / 2) - 10;
     gHeightMax = ((height / TETROMINO_BLOCK_SIZE) / 2) + 10;
-    const Uint64 rn = SDL_GetTicks();
 
+
+    Uint64 now = SDL_GetTicks();
+    static Uint64 lastFallTime = 0;
+
+    if (filledBlocks[convertGridPosYToArray(gridPos.y+1)][gridPos.x] == 1) {
+        falling = false;
+        if (now % 1000 == 0) {
+            printf("Stopped Falling: at %d (or %d) above %d (or %d)\n", gridPos.y, convertGridPosYToArray(gridPos.y), gridPos.y+1, convertGridPosYToArray(gridPos.y+1));
+        }
+    } else {
+        if (now % 1000 == 0) {
+            printf("Not Stopped Falling: at %d (or %d) !above %d (or %d)\n", gridPos.y, convertGridPosYToArray(gridPos.y), gridPos.y+1, convertGridPosYToArray(gridPos.y+1));
+        }
+    }
+
+    if (now - lastFallTime >= 1000) {
+        if (falling) {
+            gridPos.y += 1;
+            printf("Fell to %d at %llu\n", gridPos.y, now);
+        }
+        lastFallTime = now;
+    }
+
+    //Render
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
     SDL_RenderClear(renderer);
 
@@ -122,10 +156,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     for (int i = gHeightMin-1; i <= gHeightMax+1; i++) {
         for (int j = gWidthMin-1; j <= gWidthMax+1; j++) {
             if (i == gHeightMin-1 || i == gHeightMax+1 || j == gWidthMin-1 || j == gWidthMax+1) {
-                rects[rectCount].x = j * TETROMINO_BLOCK_SIZE;
-                rects[rectCount].y = i * TETROMINO_BLOCK_SIZE;
-                rects[rectCount].w = rects[rectCount].h = TETROMINO_BLOCK_SIZE;
+                setRects[rectCount].x = j * TETROMINO_BLOCK_SIZE;
+                setRects[rectCount].y = i * TETROMINO_BLOCK_SIZE;
+                setRects[rectCount].w = setRects[rectCount].h = TETROMINO_BLOCK_SIZE;
                 rectCount++;
+                filledBlocks[convertGridPosYToArray(i)][j - gWidthMin + 1] = 1;
             }
         }
     }
@@ -134,8 +169,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     rects[0].y = (gHeightMin-1) * TETROMINO_BLOCK_SIZE;
     rects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;*/
 
-    SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE);  // white, full alpha
-    SDL_RenderFillRects(renderer, rects, SDL_arraysize(rects));
+    SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE);  // grey, full alpha
+    SDL_RenderFillRects(renderer, setRects, SDL_arraysize(setRects));
 
     SDL_RenderPresent(renderer); // render everything
 
