@@ -12,7 +12,11 @@ static SDL_Renderer *renderer = NULL;
 #define GRID_WIDTH  12
 
 int width = 640, height = 480;
+
+// Blocks
 int bWidthMin, bWidthMax, bHeightMin, bHeightMax; 
+SDL_FRect setRects[300];
+bool filledBlocks[22][12] = {}, falling = true;
 
 typedef struct {
     int x;
@@ -28,8 +32,18 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     bHeightMin = ((height / TETROMINO_BLOCK_SIZE) / 2) - 10;
     bHeightMax = ((height / TETROMINO_BLOCK_SIZE) / 2) + 10;
 
-    boardPos.x = 4;
+    boardPos.x = 5;
     boardPos.y = 1;
+
+    for (int i = 0; i < 22; i++) {
+        for (int j = 0; j < 12; j++) {
+            if (i == 0 || i == 21 || j == 0 || j == 11) {
+                filledBlocks[i][j] = true;
+            }
+            //printf("%d ", filledBlocks[i][j]);
+        }
+        //printf("\n");
+    }
 
     SDL_SetAppMetadata("Play Tetis!", "0.1.2", "com.github.SDL-Tetris.LKerr42");
 
@@ -56,20 +70,20 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 void handleKeyboardInput(SDL_Scancode event) {
     switch (event) {
         case SDL_SCANCODE_LEFT: {
-            if (boardPos.x - 1 >= bWidthMin) {
+            if (boardPos.x - 1 >= 1 && falling) {
                 boardPos.x = boardPos.x - 1;
             }
             break;
         }
         case SDL_SCANCODE_RIGHT: {
-            if (boardPos.x + 1 <= bWidthMax) {
+            if (boardPos.x + 1 <= 10 && falling) {
                 boardPos.x = boardPos.x + 1;
             }
             break;
         }
         case SDL_SCANCODE_DOWN: {
-            if (boardPos.y + 1 <= bHeightMax) {
-                boardPos.y = boardPos.y + 1;
+            if (boardPos.y + 1 <= 10 && falling) {
+                boardPos.y = boardPos.y + 2;
             } 
             break;
         }
@@ -106,9 +120,6 @@ int convertGridY(int posY) {
 int convertGridX(int posX) {
     return posX - bWidthMin;
 }
-
-SDL_FRect setRects[300];
-bool filledBlocks[22][12] = {}, falling = true;
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_GetWindowSize(window, &width, &height);
@@ -125,17 +136,19 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     static Uint64 lastFallTime = 0;
 
     if (now - lastFallTime >= 1000) {
-        if (filledBlocks[boardPos.y+1][boardPos.x] == 1) {
+        if (filledBlocks[boardPos.y+1][boardPos.x] == true) {
             falling = false;
+            filledBlocks[boardPos.y][boardPos.x] = true;
+            falling = true;
+            boardPos.x = 5;
+            boardPos.y = 1;
             printf("Stopped Falling: at %d above %d\n", boardPos.y, boardPos.y+1);
         } else {
-            printf("Not Stopped Falling: at %d above %d\n", boardPos.y, boardPos.y+1);        
+            printf("Not Stopped Falling: at %d above %d\n", boardPos.y, boardPos.y+1);     
+            boardPos.y += 1;
+            printf("Fell to %d at %llu\n", boardPos.y, now);   
         }
 
-        if (falling) {
-            boardPos.y += 1;
-            printf("Fell to %d at %llu\n", boardPos.y, now);
-        }
         lastFallTime = now;
     }
 
@@ -150,11 +163,21 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     SDL_RenderFillRect(renderer, &rects[0]); // render rectangle
 
-    int rectCount = 0;
+    int c = 0;
+    for (int i = 0; i < 22; i++) {
+        for (int j = 0; j < 12; j++) {
+            if (filledBlocks[i][j] == true) {
+                setRects[c].x = (j + bWidthMin) * TETROMINO_BLOCK_SIZE;
+                setRects[c].y = (i + bHeightMin) * TETROMINO_BLOCK_SIZE;
+                setRects[c].w = setRects[c].h = TETROMINO_BLOCK_SIZE;
+                c++;
+            }
+        }
+    }
 
-    setRects[0].x = (bWidthMin-1) * TETROMINO_BLOCK_SIZE;
+    /*setRects[0].x = (bWidthMin-1) * TETROMINO_BLOCK_SIZE;
     setRects[0].y = (bHeightMin-1) * TETROMINO_BLOCK_SIZE;
-    setRects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;
+    setRects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;*/
 
     SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE);  // grey, full alpha
     SDL_RenderFillRects(renderer, setRects, SDL_arraysize(setRects));
