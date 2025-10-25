@@ -1,12 +1,13 @@
-#define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 
+#define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #define TETROMINO_BLOCK_SIZE 20
 #define GRID_HEIGHT 22
 #define GRID_WIDTH  12
@@ -18,7 +19,7 @@ int bWidthMin, bWidthMax, bHeightMin, bHeightMax;
 //SDL_FRect setRects[300];
 bool falling = true;
 
-// Idea: each block in a TETROMINO is a different "object" within this struct, 
+// Idea: each block in a Tetromino is a different "object" within this struct, 
 // each with a different starting position and all with one colour.
 // Then they could be placed in the array with one loop
 typedef struct {
@@ -27,6 +28,7 @@ typedef struct {
     int r;
     int g;
     int b;
+    bool active;
 } blockStruct;
 blockStruct block;
 
@@ -38,10 +40,86 @@ typedef struct {
 } setBlocks;
 setBlocks filledBlocks[22][12];
 
-void setBlockColour(blockStruct *block, int R, int G, int B) { // FIX: pass in the reference to the struct smh
+typedef struct {
+    blockStruct blocks[4][4];
+    int r;
+    int g;
+    int b;
+} tetromino;
+tetromino tetArray[7];
+
+void setBlockColour(blockStruct *block, int R, int G, int B) {
     block -> r = R;
     block -> g = G;
     block -> b = B;
+}
+
+void setTetColour(tetromino *object, int R, int G, int B) {
+    object -> r = R;
+    object -> g = G;
+    object -> b = B;
+}
+
+void setupTetrominos() {
+    int shapes[7][4][4] = {
+        //Long boy
+        {{0, 0, 0, 0}, 
+         {1, 1, 1, 1},
+         {0, 0, 0, 0},
+         {0, 0, 0, 0}},
+        //Left L
+        {{0, 0, 0, 0},
+         {1, 0, 0, 0},
+         {1, 1, 1, 1},
+         {0, 0, 0, 0}},
+        //Right L
+        {{0, 0, 0, 0},
+         {0, 0, 0, 1},
+         {1, 1, 1, 1},
+         {0, 0, 0, 0}},
+        //Square
+        {{0, 0, 0, 0},
+         {0, 1, 1, 0},
+         {0, 1, 1, 0},
+         {0, 0, 0, 0}},
+        //Right squiggle
+        {{0, 1, 1, 0},
+         {1, 1, 0, 0},
+         {0, 0, 0, 0},
+         {0, 0, 0, 0}},
+        //T boy
+        {{0, 1, 0, 0},
+         {1, 1, 1, 0},
+         {0, 0, 0, 0},
+         {0, 0, 0, 0}},
+        //Left squiggle
+        {{1, 1, 0, 0},
+         {0, 1, 1, 0},
+         {0, 0, 0, 0},
+         {0, 0, 0, 0}},
+    };
+    setTetColour(&tetArray[0], 0, 255, 255); //Long boy
+    setTetColour(&tetArray[1], 0, 0, 255);   //Left L
+    setTetColour(&tetArray[2], 255, 160, 0); //Right L
+    setTetColour(&tetArray[3], 255, 255, 0); //Square 
+    setTetColour(&tetArray[4], 0, 255, 0);   //Right squiggle
+    setTetColour(&tetArray[5], 150, 0, 255); //T boy
+    setTetColour(&tetArray[6], 255, 0, 0);   //Right squiggle
+
+    int count;
+    for (int y = 0; y < 4; y++) {
+        for (int x = 0; x < 4; x++) {
+            tetArray[count].blocks[y][x].x = x + 3;
+            tetArray[count].blocks[y][x].y = y + 1;
+
+            if (shapes[count][y][x] == 1) {
+                tetArray[count].blocks[y][x].active = true;
+                setBlockColour(&tetArray[count].blocks[y][x], tetArray[count].r, tetArray[count].g, tetArray[count].b);
+            } else {
+                tetArray[count].blocks[y][x].active = false;
+            }
+        }
+    }
 }
 
 /* This function runs once at startup. */
@@ -54,6 +132,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     block.x = 5;
     block.y = 1;
+
+    setupTetrominos();
+
     setBlockColour(&block, 0, 0, 255);
 
     for (int i = 0; i < 22; i++) {
@@ -92,13 +173,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 void handleKeyboardInput(SDL_Scancode event) {
     switch (event) {
         case SDL_SCANCODE_LEFT: {
-            if (block.x - 1 >= 1 && falling) {
+            if (filledBlocks[block.y][block.x-1].v == false && falling) {
                 block.x = block.x - 1;
             }
             break;
         }
         case SDL_SCANCODE_RIGHT: {
-            if (block.x + 1 <= 10 && falling) {
+            if (filledBlocks[block.y][block.x+1].v == false && falling) {
                 block.x = block.x + 1;
             }
             break;
@@ -151,10 +232,10 @@ void randomiseBlockColour(blockStruct *block) {
             setBlockColour(block, 0, 255, 0);
             break;
         case 5: // T boy
-            setBlockColour(block, 0, 255, 255);
+            setBlockColour(block, 150, 0, 255);
             break;
         case 6: // left squiggly boy
-            setBlockColour(block, 150, 0, 255);
+            setBlockColour(block, 250, 0, 0);
             break;
     }
 }
