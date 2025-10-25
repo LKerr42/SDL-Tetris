@@ -104,8 +104,8 @@ void handleKeyboardInput(SDL_Scancode event) {
             break;
         }
         case SDL_SCANCODE_DOWN: {
-            if (block.y + 1 <= 19 && falling) {
-                block.y = block.y + 2;
+            if (filledBlocks[block.y+1][block.x].v == false && falling) {
+                block.y = block.y + 1;
             } 
             break;
         }
