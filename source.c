@@ -38,10 +38,10 @@ typedef struct {
 } setBlocks;
 setBlocks filledBlocks[22][12];
 
-void setBlockColour(blockStruct block, int R, int G, int B) { // FIX: pass in the reference to the struct smh
-    block.r = R;
-    block.g = G;
-    block.b = B;
+void setBlockColour(blockStruct *block, int R, int G, int B) { // FIX: pass in the reference to the struct smh
+    block -> r = R;
+    block -> g = G;
+    block -> b = B;
 }
 
 /* This function runs once at startup. */
@@ -54,7 +54,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     block.x = 5;
     block.y = 1;
-    setBlockColour(block, 0, 0, 255);
+    setBlockColour(&block, 0, 0, 255);
 
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
@@ -104,7 +104,7 @@ void handleKeyboardInput(SDL_Scancode event) {
             break;
         }
         case SDL_SCANCODE_DOWN: {
-            if (block.y + 1 <= 10 && falling) {
+            if (block.y + 1 <= 19 && falling) {
                 block.y = block.y + 2;
             } 
             break;
@@ -125,13 +125,38 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         }
         case SDL_EVENT_WINDOW_RESIZED: {
             SDL_GetWindowSize(window, &width, &height);
-            block.x = (width / TETROMINO_BLOCK_SIZE) / 2;
-            block.y = (height / TETROMINO_BLOCK_SIZE) / 2;
             break;
         }
     }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
+}
+
+void randomiseBlockColour(blockStruct *block) {
+    int rand = SDL_rand(7);
+    switch(rand) {
+        case 0: // long boy
+            setBlockColour(block, 0, 255, 255);
+            break;
+        case 1: // left L boy
+            setBlockColour(block, 0, 0, 255);
+            break;
+        case 2: // right L boy
+            setBlockColour(block, 255, 160, 0);
+            break;
+        case 3: // square boy
+            setBlockColour(block, 255, 255, 0);
+            break;
+        case 4: // right squiggly boy
+            setBlockColour(block, 0, 255, 0);
+            break;
+        case 5: // T boy
+            setBlockColour(block, 0, 255, 255);
+            break;
+        case 6: // left squiggly boy
+            setBlockColour(block, 150, 0, 255);
+            break;
+    }
 }
 
 /* This function runs once per frame, and is the heart of the program. */
@@ -159,6 +184,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             filledBlocks[block.y][block.x].b = block.b;
 
             //reset block
+            randomiseBlockColour(&block);
             falling = true;
             block.x = 5;
             block.y = 1;
@@ -175,31 +201,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     //Render
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
     SDL_RenderClear(renderer);
-
-    int rand = SDL_rand(7);
-    switch(rand) {
-        case 0: // long boy
-            setBlockColour(block, 0, 255, 255);
-            break;
-        case 1: // left L boy
-            setBlockColour(block, 0, 0, 255);
-            break;
-        case 2: // right L boy
-            setBlockColour(block, 255, 160, 0);
-            break;
-        case 3: // square boy
-            setBlockColour(block, 255, 255, 0);
-            break;
-        case 4: // right squiggly boy
-            setBlockColour(block, 0, 255, 0);
-            break;
-        case 5: // T boy
-            setBlockColour(block, 0, 255, 255);
-            break;
-        case 6: // left squiggly boy
-            setBlockColour(block, 150, 0, 255);
-            break;
-    }
 
     SDL_SetRenderDrawColor(renderer, block.r, block.g, block.b, SDL_ALPHA_OPAQUE);  // blue, full alpha
     rects[0].x = (block.x + bWidthMin) * TETROMINO_BLOCK_SIZE;
