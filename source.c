@@ -15,14 +15,34 @@ int width = 640, height = 480;
 
 // Blocks
 int bWidthMin, bWidthMax, bHeightMin, bHeightMax; 
-SDL_FRect setRects[300];
-bool filledBlocks[22][12] = {}, falling = true;
+//SDL_FRect setRects[300];
+bool falling = true;
 
+// Idea: each block in a TETROMINO is a different "object" within this struct, 
+// each with a different starting position and all with one colour.
+// Then they could be placed in the array with one loop
 typedef struct {
     int x;
     int y;
-} blockPos;
-blockPos boardPos;
+    int r;
+    int g;
+    int b;
+} blockStruct;
+blockStruct block;
+
+typedef struct {
+    bool v;
+    int r;
+    int g;
+    int b;
+} setBlocks;
+setBlocks filledBlocks[22][12];
+
+void setBlockColour(blockStruct block, int R, int G, int B) { // FIX: pass in the reference to the struct smh
+    block.r = R;
+    block.g = G;
+    block.b = B;
+}
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
@@ -32,13 +52,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     bHeightMin = ((height / TETROMINO_BLOCK_SIZE) / 2) - 10;
     bHeightMax = ((height / TETROMINO_BLOCK_SIZE) / 2) + 10;
 
-    boardPos.x = 5;
-    boardPos.y = 1;
+    block.x = 5;
+    block.y = 1;
+    setBlockColour(block, 0, 0, 255);
 
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
             if (i == 0 || i == 21 || j == 0 || j == 11) {
-                filledBlocks[i][j] = true;
+                filledBlocks[i][j].v = true;
+                filledBlocks[i][j].r = filledBlocks[i][j].g = filledBlocks[i][j].b = 80;
             }
             //printf("%d ", filledBlocks[i][j]);
         }
@@ -70,20 +92,20 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 void handleKeyboardInput(SDL_Scancode event) {
     switch (event) {
         case SDL_SCANCODE_LEFT: {
-            if (boardPos.x - 1 >= 1 && falling) {
-                boardPos.x = boardPos.x - 1;
+            if (block.x - 1 >= 1 && falling) {
+                block.x = block.x - 1;
             }
             break;
         }
         case SDL_SCANCODE_RIGHT: {
-            if (boardPos.x + 1 <= 10 && falling) {
-                boardPos.x = boardPos.x + 1;
+            if (block.x + 1 <= 10 && falling) {
+                block.x = block.x + 1;
             }
             break;
         }
         case SDL_SCANCODE_DOWN: {
-            if (boardPos.y + 1 <= 10 && falling) {
-                boardPos.y = boardPos.y + 2;
+            if (block.y + 1 <= 10 && falling) {
+                block.y = block.y + 2;
             } 
             break;
         }
@@ -103,8 +125,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         }
         case SDL_EVENT_WINDOW_RESIZED: {
             SDL_GetWindowSize(window, &width, &height);
-            boardPos.x = (width / TETROMINO_BLOCK_SIZE) / 2;
-            boardPos.y = (height / TETROMINO_BLOCK_SIZE) / 2;
+            block.x = (width / TETROMINO_BLOCK_SIZE) / 2;
+            block.y = (height / TETROMINO_BLOCK_SIZE) / 2;
             break;
         }
     }
@@ -112,14 +134,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
-//I dont know
-int convertGridY(int posY) {
-    return posY - bHeightMin;
-}
-//I dont know
-int convertGridX(int posX) {
-    return posX - bWidthMin;
-}
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_GetWindowSize(window, &width, &height);
@@ -136,17 +150,23 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     static Uint64 lastFallTime = 0;
 
     if (now - lastFallTime >= 1000) {
-        if (filledBlocks[boardPos.y+1][boardPos.x] == true) {
+        if (filledBlocks[block.y+1][block.x].v == true) {
             falling = false;
-            filledBlocks[boardPos.y][boardPos.x] = true;
+            //set block
+            filledBlocks[block.y][block.x].v = true;
+            filledBlocks[block.y][block.x].r = block.r;
+            filledBlocks[block.y][block.x].g = block.g;
+            filledBlocks[block.y][block.x].b = block.b;
+
+            //reset block
             falling = true;
-            boardPos.x = 5;
-            boardPos.y = 1;
-            printf("Stopped Falling: at %d above %d\n", boardPos.y, boardPos.y+1);
+            block.x = 5;
+            block.y = 1;
+            printf("Stopped Falling: at %d above %d\n", block.y, block.y+1);
         } else {
-            printf("Not Stopped Falling: at %d above %d\n", boardPos.y, boardPos.y+1);     
-            boardPos.y += 1;
-            printf("Fell to %d at %llu\n", boardPos.y, now);   
+            printf("Not Stopped Falling: at %d above %d\n", block.y, block.y+1);     
+            block.y += 1;
+            printf("Fell to %d at %llu\n", block.y, now);   
         }
 
         lastFallTime = now;
@@ -156,21 +176,48 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
     SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_OPAQUE);  // blue, full alpha
-    rects[0].x = (boardPos.x + bWidthMin) * TETROMINO_BLOCK_SIZE;
-    rects[0].y = (boardPos.y + bHeightMin) * TETROMINO_BLOCK_SIZE;
+    int rand = SDL_rand(7);
+    switch(rand) {
+        case 0: // long boy
+            setBlockColour(block, 0, 255, 255);
+            break;
+        case 1: // left L boy
+            setBlockColour(block, 0, 0, 255);
+            break;
+        case 2: // right L boy
+            setBlockColour(block, 255, 160, 0);
+            break;
+        case 3: // square boy
+            setBlockColour(block, 255, 255, 0);
+            break;
+        case 4: // right squiggly boy
+            setBlockColour(block, 0, 255, 0);
+            break;
+        case 5: // T boy
+            setBlockColour(block, 0, 255, 255);
+            break;
+        case 6: // left squiggly boy
+            setBlockColour(block, 150, 0, 255);
+            break;
+    }
+
+    SDL_SetRenderDrawColor(renderer, block.r, block.g, block.b, SDL_ALPHA_OPAQUE);  // blue, full alpha
+    rects[0].x = (block.x + bWidthMin) * TETROMINO_BLOCK_SIZE;
+    rects[0].y = (block.y + bHeightMin) * TETROMINO_BLOCK_SIZE;
     rects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;
 
     SDL_RenderFillRect(renderer, &rects[0]); // render rectangle
 
-    int c = 0;
+    //int c = 0;
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
-            if (filledBlocks[i][j] == true) {
-                setRects[c].x = (j + bWidthMin) * TETROMINO_BLOCK_SIZE;
-                setRects[c].y = (i + bHeightMin) * TETROMINO_BLOCK_SIZE;
-                setRects[c].w = setRects[c].h = TETROMINO_BLOCK_SIZE;
-                c++;
+            if (filledBlocks[i][j].v == true) {
+                rects[0].x = (j + bWidthMin) * TETROMINO_BLOCK_SIZE;
+                rects[0].y = (i + bHeightMin) * TETROMINO_BLOCK_SIZE;
+                rects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;
+                SDL_SetRenderDrawColor(renderer, filledBlocks[i][j].r, filledBlocks[i][j].g, filledBlocks[i][j].b, SDL_ALPHA_OPAQUE);
+                SDL_RenderFillRect(renderer, &rects[0]);
+                //c++;
             }
         }
     }
@@ -179,8 +226,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     setRects[0].y = (bHeightMin-1) * TETROMINO_BLOCK_SIZE;
     setRects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;*/
 
-    SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE);  // grey, full alpha
-    SDL_RenderFillRects(renderer, setRects, SDL_arraysize(setRects));
+    //SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE);  // grey, full alpha
+    //SDL_RenderFillRects(renderer, setRects, SDL_arraysize(setRects));
 
     SDL_RenderPresent(renderer); // render everything
 
