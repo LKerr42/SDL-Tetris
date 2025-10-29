@@ -3,6 +3,7 @@
 #include <SDL3/SDL_main.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
@@ -15,7 +16,7 @@ int width = 640, height = 480;
 // Blocks
 int bWidthMin, bWidthMax, bHeightMin, bHeightMax; 
 
-int randBlock = 0;
+int randBlock = 0, rotationI = 0;
 bool falling = true, winning = true;
 
 // Idea: each block in a Tetromino is a different "object" within this struct, 
@@ -64,8 +65,8 @@ void setTetColour(tetromino *object, int R, int G, int B) {
 void setupTetrominos() {
     int shapes[7][4][4] = {
         //Long boy
-        {{1, 1, 1, 1}, 
-         {0, 0, 0, 0},
+        {{0, 0, 0, 0}, 
+         {1, 1, 1, 1},
          {0, 0, 0, 0},
          {0, 0, 0, 0}},
         //Left L
@@ -195,6 +196,108 @@ bool canMove(tetromino *t, setBlocks filledBlocks[22][12], int dx, int dy) {
     return true;
 }
 
+void rotateTetrominoCW(tetromino *t) {
+    int N, Y, X, rx, ry;
+    blockStruct temp[4][4];
+    if (randBlock == 0) {
+        N = 4;
+    } else if (randBlock == 3) {
+        N = 2;
+    } else {
+        N = 3;
+    }
+
+    //printf("Colour: %d, %d, %d\n", t->r, t->g, t->b);
+
+    for (Y = 0; Y < 4; Y++) { //FIX: the active, x and y variables have to be updated aswell
+        for (X = 0; X < 4; X++) {
+            temp[Y][X].active = false;
+
+            temp[Y][X].x = X;
+            temp[Y][X].y = Y;
+
+            temp[Y][X].r = t->r;
+            temp[Y][X].g = t->g;
+            temp[Y][X].b = t->b;
+        }
+    }
+
+    for (Y = 0; Y < N; Y++) { 
+        for (X = 0; X < N; X++) {
+            blockStruct src = t->blocks[Y][X];
+
+            rx = Y;
+            ry = 1 - (X - (N - 2));
+
+            temp[ry][rx] = src;
+
+            temp[ry][rx].x = rx;
+            temp[ry][rx].y = ry;
+
+            temp[ry][rx].r = t->r;
+            temp[ry][rx].g = t->g;
+            temp[ry][rx].b = t->b;
+        }
+    }
+
+    for (Y = 0; Y < 4; Y++) {
+        for (X = 0; X < 4; X++) {
+            t->blocks[Y][X] = temp[Y][X];
+        }
+    }
+}
+
+void rotateTetrominoCCW(tetromino *t) {
+    int N, Y, X;
+    blockStruct temp[4][4];
+    if (randBlock == 0) {
+        N = 4;
+    } else if (randBlock == 3) {
+        N = 2;
+    } else {
+        N = 3;
+    }
+
+    //printf("Colour: %d, %d, %d\n", t->r, t->g, t->b);
+
+    for (Y = 0; Y < 4; Y++) { //FIX: the active, x and y variables have to be updated aswell
+        for (X = 0; X < 4; X++) {
+            temp[Y][X].active = false;
+
+            temp[Y][X].x = X;
+            temp[Y][X].y = Y;
+
+            temp[Y][X].r = t->r;
+            temp[Y][X].g = t->g;
+            temp[Y][X].b = t->b;
+        }
+    }
+
+    for (Y = 0; Y < N; Y++) { 
+        for (X = 0; X < N; X++) {
+            blockStruct src = t->blocks[Y][X];
+
+            int rx = 1 - (Y - (N - 2));
+            int ry = X;
+
+            temp[ry][rx] = src;
+
+            temp[ry][rx].x = rx;
+            temp[ry][rx].y = ry;
+
+            temp[ry][rx].r = t->r;
+            temp[ry][rx].g = t->g;
+            temp[ry][rx].b = t->b;
+        }
+    }
+
+    for (Y = 0; Y < 4; Y++) {
+        for (X = 0; X < 4; X++) {
+            t->blocks[Y][X] = temp[Y][X];
+        }
+    }
+}
+
 void handleKeyboardInput(SDL_Scancode event) {
     int indx, furth;
     switch (event) {
@@ -219,6 +322,15 @@ void handleKeyboardInput(SDL_Scancode event) {
                 // Copy its active cells into filledBlocks
             }
             break;
+        }
+        case SDL_SCANCODE_D: {
+            printf("Rotating CW\n");
+            rotateTetrominoCW(&tetArray[randBlock]);
+            break;
+        }
+        case SDL_SCANCODE_A: {
+            printf("Rotating CCW\n");
+            rotateTetrominoCCW(&tetArray[randBlock]);
         }
     }
 }
@@ -249,7 +361,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 void moveBoardDown(int remove) {
-    
+    for (int i = remove; i >= 2; i--) {
+        for (int j = 1; j <= 10; j++) {
+            filledBlocks[i][j] = filledBlocks[i-1][j];
+        }
+    }
 }
 
 bool toStop = false;
@@ -347,6 +463,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         }
     }
 
+    //check if row filled
     int countBlocks = 0;
     for (int l = 1; l <= 20; l++) {
         countBlocks = 0;
