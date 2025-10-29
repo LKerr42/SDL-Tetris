@@ -2,7 +2,7 @@
 echo Compiling...
 
 REM Compile the program
-gcc -g source.c -o source.exe -I "C:\Users\LiamK\Documents\Uni\SDL\x86_64-w64-mingw32\include" -L "C:\Users\LiamK\Documents\Uni\SDL\x86_64-w64-mingw32\lib" -l SDL3
+gcc -g source.c -o source.exe -I "C:\Users\LiamK\Documents\Uni\SDL\x86_64-w64-mingw32\include" -I "C:\Users\LiamK\Documents\Uni\SDL3_ttf\x86_64-w64-mingw32\include" -L "C:\Users\LiamK\Documents\Uni\SDL\x86_64-w64-mingw32\lib" -L "C:\Users\LiamK\Documents\Uni\SDL3_ttf\x86_64-w64-mingw32\lib" -l SDL3 -l SDL3_ttf
 
 REM Check if compilation failed
 if errorlevel 1 (
@@ -18,3 +18,5 @@ echo.
 
 REM Run the program
 source.exe
+
+pause
