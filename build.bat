@@ -18,5 +18,3 @@ echo.
 
 REM Run the program
 source.exe
-
-pause

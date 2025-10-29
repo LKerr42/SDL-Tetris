@@ -4,7 +4,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <string.h> 
 #define TETROMINO_BLOCK_SIZE 20
 
 /* We will use this renderer to draw into this window every frame. */
@@ -18,7 +18,7 @@ int bWidthMin, bWidthMax, bHeightMin, bHeightMax;
 int randBlock = 0, rotationI = 0;
 bool falling = true, winning = true;
 
-TTF_Font* font;
+TTF_Font* globalFont;
 
 // Idea: each block in a Tetromino is a different "object" within this struct, 
 // each with a different starting position and all with one colour.
@@ -179,8 +179,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    font = TTF_OpenFont("assets\\VT323-Regular.ttf", 24);
-    if (font == NULL) {
+    globalFont = TTF_OpenFont("assets\\VT323-Regular.ttf", 24);
+    if (globalFont == NULL) {
         SDL_Log("Failed to load font: %s", SDL_GetError());
     }
 
@@ -403,6 +403,33 @@ void moveBoardDown(int remove) {
     }
 }
 
+void displayText(char str[], int x, int y, TTF_Font* font, int r, int g, int b) {
+    // Render text to a surface
+    SDL_Color textColor = {r, g, b, 255};
+    SDL_Surface *textSurface = TTF_RenderText_Blended(font, str, strlen(str), textColor);
+    if (!textSurface) {
+        SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
+        return;
+    }
+
+    // Convert surface to texture
+    SDL_Texture *textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    SDL_DestroySurface(textSurface); // free surface memory
+
+    if (!textTexture) {
+        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+        return;
+    }
+
+    // Get text dimensions
+    float textW, textH;
+    SDL_GetTextureSize(textTexture, &textW, &textH);
+
+    SDL_FRect textRect = {x, y, textW, textH};
+    SDL_RenderTexture(renderer, textTexture, NULL, &textRect);
+    SDL_DestroyTexture(textTexture);
+}
+
 bool toStop = false;
 int posX = 0, posY = 0;
 /* This function runs once per frame, and is the heart of the program. */
@@ -412,44 +439,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 now = SDL_GetTicks();
     static Uint64 lastFallTime = 0;
 
-    // Render text to a surface
-    SDL_Color textColor = {255, 255, 255, 255};
-    SDL_Surface *textSurface = TTF_RenderText_Blended(font, "Tetris Time!", 13, textColor);
-    if (!textSurface) {
-        SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
-        return 1;
-    }
-
-    // Convert surface to texture
-    SDL_Texture *textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    SDL_DestroySurface(textSurface); // free surface memory
-
-    if (!textTexture) {
-        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
-        return 1;
-    }
-
-    // Get text dimensions
-    float textW, textH;
-    SDL_GetTextureSize(textTexture, &textW, &textH);
-
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    // Draw loop
-    bool running = true;
-    while (running) {
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_EVENT_QUIT)
-                running = false;
-        }
-
-        SDL_FRect textRect = {100, 100, textW, textH};
-        SDL_RenderTexture(renderer, textTexture, NULL, &textRect);
-
-        SDL_RenderPresent(renderer);
-    }
+    displayText("Tetris Time!", 0, 0, globalFont, 255, 255, 255);
 
     if (winning) {
         if (now - lastFallTime >= 1000) {
@@ -549,75 +542,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
         SDL_RenderClear(renderer);
         bool displayed = false;
-        if (!displayed) {
-            printf("Lost\n");
-            displayed = true;
-        }
+        displayText("You Lost!", (width/2)-10, 10, globalFont, 255, 255, 255);
     }
-    /*setRects[0].x = (bWidthMin-1) * TETROMINO_BLOCK_SIZE;
-    setRects[0].y = (bHeightMin-1) * TETROMINO_BLOCK_SIZE;
-    setRects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;*/
-
-    //SDL_SetRenderDrawColor(renderer, 80, 80, 80, SDL_ALPHA_OPAQUE);  // grey, full alpha
-    //SDL_RenderFillRects(renderer, setRects, SDL_arraysize(setRects));
 
     SDL_RenderPresent(renderer); // render everything
-
-    /*
-    SDL_FRect rects[16];
-    const Uint64 now = SDL_GetTicks();
-    int i;
-
-    //we'll have the rectangles grow and shrink over a few seconds.
-    const float direction = ((now % 2000) >= 1000) ? 1.0f : -1.0f;
-    const float scale = ((float) (((int) (now % 1000)) - 500) / 500.0f) * direction;
-
-    //as you can see from this, rendering draws over whatever was drawn before it.
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  //black, full alpha
-    SDL_RenderClear(renderer);  //start with a blank canvas.
-
-    // Rectangles are comprised of set of X and Y coordinates, plus width and
-    // height. (0, 0) is the top left of the window, and larger numbers go
-    // down and to the right. This isn't how geometry works, but this is
-    // pretty standard in 2D graphics.
-
-    // Let's draw a single rectangle (square, really).
-    rects[0].x = rects[0].y = 100;
-    rects[0].w = rects[0].h = 100 + (100 * scale);
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);  // red, full alpha
-    SDL_RenderRect(renderer, &rects[0]);
-
-    / Now let's draw several rectangles with one function call.
-    for (i = 0; i < 3; i++) {
-        const float size = (i+1) * 50.0f;
-        rects[i].w = rects[i].h = size + (size * scale);
-        rects[i].x = (WINDOW_WIDTH - rects[i].w) / 2;  // center it.
-        rects[i].y = (WINDOW_HEIGHT - rects[i].h) / 2;  // center it.
-    }
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_OPAQUE);  // green, full alpha 
-    SDL_RenderRects(renderer, rects, 3);  // draw three rectangles at once
-
-    // those were rectangle _outlines_, really. You can also draw _filled_ rectangles! 
-    rects[0].x = 400;
-    rects[0].y = 50;
-    rects[0].w = 100 + (100 * scale);
-    rects[0].h = 50 + (50 * scale);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_OPAQUE);  // blue, full alpha
-    SDL_RenderFillRect(renderer, &rects[0]);
-
-    // ...and also fill a bunch of rectangles at once...
-    for (i = 0; i < SDL_arraysize(rects); i++) {
-        const float w = (float) (WINDOW_WIDTH / SDL_arraysize(rects));
-        const float h = i * 8.0f;
-        rects[i].x = i * w;
-        rects[i].y = WINDOW_HEIGHT - h;
-        rects[i].w = w;
-        rects[i].h = h;
-    }
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);  // white, full alpha
-    SDL_RenderFillRects(renderer, rects, SDL_arraysize(rects));
-
-    SDL_RenderPresent(renderer);  // put it all on the screen! */
 
     return SDL_APP_CONTINUE;  // carry on with the program!
 }
@@ -625,7 +553,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     /* SDL will clean up the window/renderer for us. */
-    TTF_CloseFont(font);
+    TTF_CloseFont(globalFont);
     TTF_Quit();
 }
 
