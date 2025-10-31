@@ -18,10 +18,11 @@ int width = 700, height = 550;
 
 // Blocks
 int bWidthMin, bWidthMax, bHeightMin, bHeightMax; 
-int currentBlock = 0, rotationI = 0;
+int currentBlock = 0, score = 0;
 float textW, textH;
 
 bool falling = true, winning = false, titleCard = true;
+char scoreString[7] = "0000000";
 
 TTF_Font* globalFont;
 
@@ -69,6 +70,14 @@ void setTetColour(tetromino *object, int R, int G, int B) {
     object -> r = R;
     object -> g = G;
     object -> b = B;
+}
+
+void prependChar(char *str, char c) {
+    size_t len = strlen(str);
+
+    memmove(str + 1, str, len + 1);
+
+    str[0] = c;
 }
 
 void setupStaticText();
@@ -562,6 +571,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     if (winning) {
         //displayText("Tetris Time!", -1, (bHeightMin/2)*TETROMINO_BLOCK_SIZE, globalFont, 255, 255, 255);
         displayStaticTexture();
+        displayText(scoreString, (bWidthMax*TETROMINO_BLOCK_SIZE)+60, (bHeightMin*TETROMINO_BLOCK_SIZE)+49, globalFont, 255, 255, 255);
 
         if (now - lastFallTime >= 1000) {
             for (int a = 0; a < 4; a++) {
@@ -641,6 +651,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
 
+        int linesCleared = 0;
+
         //check if row filled
         int countBlocks = 0;
         for (int l = 1; l <= 20; l++) {
@@ -652,8 +664,33 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
             if (countBlocks == 10) {
                 moveBoardDown(l);
+                linesCleared++;
             }
         }
+
+        switch (linesCleared) {
+            case 1:
+                score += 40;
+                break;
+            case 2:
+                score += 100;
+                break;
+            case 3:
+                score += 300;
+                break;
+            case 4:
+                score += 1200;
+                break;
+        }
+
+        char incompleteScore[7];
+        sprintf(incompleteScore, "%d", score);
+        while (strlen(incompleteScore) != 7) {
+            prependChar(incompleteScore, '0');
+        }
+
+        strcpy(scoreString, incompleteScore);
+        
     } else if (titleCard == false) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
         SDL_RenderClear(renderer);
