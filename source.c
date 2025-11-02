@@ -14,7 +14,7 @@ static SDL_Renderer *renderer = NULL;
 
 SDL_Texture *staticText;
 
-int width = 700, height = 550;
+int width = 1000, height = 750;
 
 // Blocks
 int bWidthMin, bWidthMax, bHeightMin, bHeightMax; 
@@ -49,6 +49,7 @@ setBlocks filledBlocks[22][12];
 
 typedef struct {
     blockStruct blocks[4][4];
+    blockStruct titleBlocks[5][4];
     int r;
     int g;
     int b;
@@ -56,6 +57,14 @@ typedef struct {
     int y;
 } tetromino;
 tetromino tetArray[7];
+tetromino titleTetroes[6];
+
+typedef struct {
+    int r;
+    int g;
+    int b;
+} colours;
+colours colour[7];
 
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
@@ -70,6 +79,12 @@ void setTetColour(tetromino *object, int R, int G, int B) {
     object -> r = R;
     object -> g = G;
     object -> b = B;
+}
+
+void setColourDef(colours *data, int R, int G, int B) {
+    data -> r = R;
+    data -> g = G;
+    data -> b = B;
 }
 
 void prependChar(char *str, char c) {
@@ -126,7 +141,7 @@ void setupTetrominos() {
     setTetColour(&tetArray[3], 255, 255, 0); //Square 
     setTetColour(&tetArray[4], 0, 255, 0);   //Right squiggle
     setTetColour(&tetArray[5], 150, 0, 255); //T boy
-    setTetColour(&tetArray[6], 255, 0, 0);   //Right squiggle
+    setTetColour(&tetArray[6], 255, 0, 0);   //Left squiggle
 
     for (int count = 0; count < 7; count++) {
         for (int y = 0; y < 4; y++) {
@@ -148,6 +163,78 @@ void setupTetrominos() {
     }
 }
 
+void setupTitleBlocks() {
+    int letters[6][5][4] = {
+        //T
+        {{1, 1, 1, 0}, 
+         {0, 1, 0, 0},
+         {0, 1, 0, 0},
+         {0, 1, 0, 0},
+         {0, 1, 0, 0}},
+        //E
+        {{1, 1, 1, 0}, 
+         {1, 0, 0, 0},
+         {1, 1, 0, 0},
+         {1, 0, 0, 0},
+         {1, 1, 1, 0}},
+        //T
+        {{1, 1, 1, 0}, 
+         {0, 1, 0, 0},
+         {0, 1, 0, 0},
+         {0, 1, 0, 0},
+         {0, 1, 0, 0}},
+        //R
+        {{1, 1, 1, 0}, 
+         {1, 0, 0, 1},
+         {1, 1, 1, 0},
+         {1, 0, 1, 0},
+         {1, 0, 0, 1}},
+        //I
+        {{1, 1, 1, 0}, 
+         {0, 1, 0, 0},
+         {0, 1, 0, 0},
+         {0, 1, 0, 0},
+         {1, 1, 1, 0}},
+        //S
+        {{0, 1, 1, 1}, 
+         {1, 0, 0, 0},
+         {0, 1, 1, 0},
+         {0, 0, 0, 1},
+         {1, 1, 1, 0}},
+    };
+
+    for (int count = 0; count < 6; count++) {
+        setTetColour(&titleTetroes[count], 0, 0, 255);
+
+        for (int Y = 0; Y < 5; Y++) {
+            for (int X = 0; X < 4; X++) {
+                titleTetroes[count].titleBlocks[Y][X].x = X;
+                titleTetroes[count].titleBlocks[Y][X].y = Y;
+
+                if (letters[count][Y][X] == 1) {
+                    titleTetroes[count].titleBlocks[Y][X].active = true;
+                    setBlockColour(&titleTetroes[count].titleBlocks[Y][X], titleTetroes[count].r, titleTetroes[count].g, titleTetroes[count].b);
+                } else {
+                    titleTetroes[count].titleBlocks[Y][X].active = false;
+                }
+
+                if (titleTetroes[count].titleBlocks[Y][X].active == true) {
+                    printf("(%d, %d), ", titleTetroes[count].titleBlocks[Y][X].x, titleTetroes[count].titleBlocks[Y][X].y);
+                } else {
+                    printf("(-, -), ");
+                }
+                
+
+            }
+            printf("\n");
+        }
+        titleTetroes[count].x = (TETROMINO_BLOCK_SIZE << 2) * count;
+        if (count == 4 || count == 5) titleTetroes[count].x += TETROMINO_BLOCK_SIZE;
+        titleTetroes[count].y = 0;
+        printf("\n");
+    }
+}
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     bWidthMin = ((width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
@@ -157,8 +244,17 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     bHeightMax = ((height / TETROMINO_BLOCK_SIZE) >> 1) + 10;
 
     setupTetrominos();
+    setupTitleBlocks();
 
     setBlockColour(&block, 0, 0, 255);
+
+    setColourDef(&colour[0], 0, 255, 255); //blue
+    setColourDef(&colour[1], 100, 100, 100); //turquoise
+    setColourDef(&colour[2], 0, 255, 0); //green
+    setColourDef(&colour[3], 255, 255, 0); //yellow
+    setColourDef(&colour[4], 155, 160, 0); //orange
+    setColourDef(&colour[5], 255, 0, 0); //red
+    setColourDef(&colour[6], 150, 0, 255); //purple
 
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
@@ -171,7 +267,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         //printf("\n");
     }
 
-    SDL_SetAppMetadata("Play Tetis!", "0.3.1", "com.LKerr42.SDL-Tetris.github");
+    SDL_SetAppMetadata("Play Tetis!", "0.4.0", "com/LKerr42/SDL-Tetris.github");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -559,17 +655,53 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_FRect rects[20];
 
     Uint64 now = SDL_GetTicks();
-    static Uint64 lastFallTime = 0;
+    static Uint64 lastFallTime = 0, lastChange = 0;
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
+    int halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
+    int halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
+    int currentMove = 0, currentColour = 0;
+
     if (titleCard) {
-        displayText("Press Space to start", -1, -1, globalFont, 255, 255, 255);
+        if (now - lastChange >= 1000) {
+            if (currentMove == 7) {
+                currentMove = 0;
+                currentColour++;
+                if (currentColour == 7) currentColour = 0;
+            }
+
+            titleTetroes[currentMove].r = colour[currentColour].r;
+            titleTetroes[currentMove].g = colour[currentColour].g;
+            titleTetroes[currentMove].g = colour[currentColour].b;
+
+            currentMove++;
+            lastChange = now;
+        }
+        displayText("Tribute by LKerr42", -1, (height >> 1) + (TETROMINO_BLOCK_SIZE << 1), globalFont, 255, 255, 255);
+        displayText("Press Space to start", -1, 10, globalFont, 255, 255, 255);
+        for (int countB = 0; countB < 6; countB++) {
+            for (int Y = 0; Y < 5; Y++) {
+                for (int X = 0; X < 4; X++) {
+                    if (titleTetroes[countB].titleBlocks[Y][X].active == true) {
+                        posX = titleTetroes[countB].x + (X * TETROMINO_BLOCK_SIZE) + halfTitleWidth;
+                        posY = titleTetroes[countB].y + (Y* TETROMINO_BLOCK_SIZE) + halfTitleHeight;
+
+                        SDL_FRect Trect = {
+                            posX,
+                            posY - (TETROMINO_BLOCK_SIZE << 1),
+                            TETROMINO_BLOCK_SIZE,
+                            TETROMINO_BLOCK_SIZE
+                        };
+                        displayBlock(Trect, titleTetroes[countB].r, titleTetroes[countB].g, titleTetroes[countB].b);
+                    }
+                }
+            }
+        }
     }
 
     if (winning) {
-        //displayText("Tetris Time!", -1, (bHeightMin/2)*TETROMINO_BLOCK_SIZE, globalFont, 255, 255, 255);
         displayStaticTexture();
         displayText(scoreString, (bWidthMax*TETROMINO_BLOCK_SIZE)+60, (bHeightMin*TETROMINO_BLOCK_SIZE)+49, globalFont, 255, 255, 255);
 
@@ -627,8 +759,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
                 if (tetArray[currentBlock].blocks[y][x].active) {
-                    posX = tetArray[currentBlock].x+tetArray[currentBlock].blocks[y][x].x;
-                    posY = tetArray[currentBlock].y+tetArray[currentBlock].blocks[y][x].y;
+                    posX = tetArray[currentBlock].x + x;
+                    posY = tetArray[currentBlock].y + y;
                     SDL_FRect Brect = {
                         (posX + bWidthMin) * TETROMINO_BLOCK_SIZE,
                         (posY + bHeightMin) * TETROMINO_BLOCK_SIZE,
@@ -640,7 +772,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
 
-        for (int i = 0; i < 22; i++) {
+        //Optimisation idea: use a single map/image/texture/surdace or whatever to display the board, 
+        //and recalibrate it when there are updates
+        for (int i = 0; i < 22; i++) { 
             for (int j = 0; j < 12; j++) {
                 if (filledBlocks[i][j].v == true) {
                     rects[0].x = (j + bWidthMin) * TETROMINO_BLOCK_SIZE;
@@ -710,4 +844,3 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     TTF_CloseFont(globalFont);
     TTF_Quit();
 }
-
