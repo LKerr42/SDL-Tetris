@@ -248,11 +248,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     setBlockColour(&block, 0, 0, 255);
 
-    setColourDef(&colour[0], 0, 255, 255); //blue
-    setColourDef(&colour[1], 100, 100, 100); //turquoise
+    setColourDef(&colour[0], 0, 0, 255); //blue
+    setColourDef(&colour[1], 0, 255, 255); //turquoise
     setColourDef(&colour[2], 0, 255, 0); //green
     setColourDef(&colour[3], 255, 255, 0); //yellow
-    setColourDef(&colour[4], 155, 160, 0); //orange
+    setColourDef(&colour[4], 255, 160, 0); //orange
     setColourDef(&colour[5], 255, 0, 0); //red
     setColourDef(&colour[6], 150, 0, 255); //purple
 
@@ -267,7 +267,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         //printf("\n");
     }
 
-    SDL_SetAppMetadata("Play Tetis!", "0.4.0", "com/LKerr42/SDL-Tetris.github");
+    SDL_SetAppMetadata("Play Tetis!", "0.5.0", "com/LKerr42/SDL-Tetris.github");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -650,6 +650,7 @@ void displayBlock(SDL_FRect rect, int r, int g, int b) {
 
 bool toStop = false;
 int posX = 0, posY = 0;
+int currentMove = 0, currentColour = 1;
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_FRect rects[20];
@@ -662,11 +663,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     int halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     int halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
-    int currentMove = 0, currentColour = 0;
 
     if (titleCard) {
-        if (now - lastChange >= 1000) {
-            if (currentMove == 7) {
+        if (now - lastChange >= 500) {
+            printf("Changing colours to colour %d (%d, %d, %d) at block %d (t = %d)\n", currentColour, colour[currentColour].r, colour[currentColour].g, colour[currentColour].b, currentMove, now);
+            if (currentMove == 6) {
                 currentMove = 0;
                 currentColour++;
                 if (currentColour == 7) currentColour = 0;
@@ -674,7 +675,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
             titleTetroes[currentMove].r = colour[currentColour].r;
             titleTetroes[currentMove].g = colour[currentColour].g;
-            titleTetroes[currentMove].g = colour[currentColour].b;
+            titleTetroes[currentMove].b = colour[currentColour].b;
 
             currentMove++;
             lastChange = now;
