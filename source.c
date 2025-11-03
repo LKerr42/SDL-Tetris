@@ -217,22 +217,97 @@ void setupTitleBlocks() {
                 } else {
                     titleTetroes[count].titleBlocks[Y][X].active = false;
                 }
-
-                if (titleTetroes[count].titleBlocks[Y][X].active == true) {
-                    printf("(%d, %d), ", titleTetroes[count].titleBlocks[Y][X].x, titleTetroes[count].titleBlocks[Y][X].y);
-                } else {
-                    printf("(-, -), ");
-                }
                 
 
             }
-            printf("\n");
         }
         titleTetroes[count].x = (TETROMINO_BLOCK_SIZE << 2) * count;
         if (count == 4 || count == 5) titleTetroes[count].x += TETROMINO_BLOCK_SIZE;
         titleTetroes[count].y = 0;
-        printf("\n");
     }
+}
+
+SDL_Texture* boardTexture;
+
+void displayBlock(SDL_FRect rect, int r, int g, int b, bool drawTexture) {
+    int i, j, cX = 0, cY = 0;
+    int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
+    
+    int cR = SDL_clamp(r-45, 0, 255);
+    int cG = SDL_clamp(g-45, 0, 255);
+    int cB = SDL_clamp(b-45, 0, 255);
+
+    int bR = SDL_clamp(r-90, 0, 255);
+    int bG = SDL_clamp(g-90, 0, 255);
+    int bB = SDL_clamp(b-90, 0, 255);
+
+    if (drawTexture) {
+        SDL_SetRenderTarget(renderer, boardTexture);
+    }
+
+    SDL_FRect pixelRect;
+    pixelRect.w = pixelRect.h = 1;
+    for (i = minY; i < maxY; i++) {
+        cY++;
+        for (j = minX; j < maxX; j++) { 
+            cX++;
+            if (i > minY+3 && i < maxY-3 && j > minX+3 && j < maxX-3) {
+                SDL_SetRenderDrawColor(renderer, cR, cG, cB, SDL_ALPHA_OPAQUE); 
+            } else if ((-cX+rect.w) - cY < -1) {
+                SDL_SetRenderDrawColor(renderer, bR, bG, bB, SDL_ALPHA_OPAQUE); 
+            } else {
+                SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
+            }
+            pixelRect.y = i;
+            pixelRect.x = j;
+            SDL_RenderFillRect(renderer, &pixelRect);
+        }
+        cX = 0;
+    }
+
+    if (drawTexture) {
+        SDL_SetRenderTarget(renderer, NULL);
+    }
+}
+
+void buildBoardTexture() {
+    SDL_SetRenderTarget(renderer, boardTexture);
+
+    // Clear previous contents
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    SDL_FRect rect;
+    rect.w = rect.h = TETROMINO_BLOCK_SIZE;
+
+    for (int i = 0; i < 22; i++) { 
+        for (int j = 0; j < 12; j++) {
+            if (filledBlocks[i][j].v == true) {
+
+                rect.x = j * TETROMINO_BLOCK_SIZE;
+                rect.y = i * TETROMINO_BLOCK_SIZE;
+
+                displayBlock(rect,
+                             filledBlocks[i][j].r,
+                             filledBlocks[i][j].g,
+                             filledBlocks[i][j].b,
+                             true);   // draw to texture
+            }
+        }
+    }
+
+    SDL_SetRenderTarget(renderer, NULL); // back to screen
+}
+
+void renderBoard() {
+    SDL_FRect displayRect = {
+        bWidthMin*TETROMINO_BLOCK_SIZE,
+        bHeightMin*TETROMINO_BLOCK_SIZE,
+        12*TETROMINO_BLOCK_SIZE,
+        22*TETROMINO_BLOCK_SIZE
+    };
+
+    SDL_RenderTexture(renderer, boardTexture, NULL, &displayRect);
 }
 
 /* This function runs once at startup. */
@@ -245,8 +320,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     setupTetrominos();
     setupTitleBlocks();
-
-    setBlockColour(&block, 0, 0, 255);
 
     setColourDef(&colour[0], 0, 0, 255); //blue
     setColourDef(&colour[1], 0, 255, 255); //turquoise
@@ -262,9 +335,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
                 filledBlocks[i][j].v = true;
                 filledBlocks[i][j].r = filledBlocks[i][j].g = filledBlocks[i][j].b = 125;
             }
-            //printf("%d ", filledBlocks[i][j]);
         }
-        //printf("\n");
     }
 
     SDL_SetAppMetadata("Play Tetis!", "0.5.0", "com/LKerr42/SDL-Tetris.github");
@@ -298,6 +369,18 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     setupStaticText();
 
+    boardTexture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        12*TETROMINO_BLOCK_SIZE,
+        22*TETROMINO_BLOCK_SIZE
+    );
+    if (!boardTexture) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
+    buildBoardTexture();
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -335,8 +418,6 @@ void rotateTetrominoCW(tetromino *t) {
     } else {
         N = 3;
     }
-
-    //printf("Colour: %d, %d, %d\n", t->r, t->g, t->b);
 
     for (Y = 0; Y < 4; Y++) { //FIX: the active, x and y variables have to be updated aswell
         for (X = 0; X < 4; X++) {
@@ -396,8 +477,6 @@ void rotateTetrominoCCW(tetromino *t) {
     } else {
         N = 3;
     }
-
-    //printf("Colour: %d, %d, %d\n", t->r, t->g, t->b);
 
     for (Y = 0; Y < 4; Y++) { //FIX: the active, x and y variables have to be updated aswell
         for (X = 0; X < 4; X++) {
@@ -474,12 +553,10 @@ void handleKeyboardInput(SDL_Scancode event) {
             break;
         }
         case SDL_SCANCODE_D: {
-            printf("Rotating CW\n");
             rotateTetrominoCW(&tetArray[currentBlock]);
             break;
         }
         case SDL_SCANCODE_A: {
-            printf("Rotating CCW\n");
             rotateTetrominoCCW(&tetArray[currentBlock]);
             break;
         }
@@ -615,39 +692,6 @@ void displayStaticTexture() {
     SDL_RenderTexture(renderer, staticText, NULL, &textRect);
 }
 
-void displayBlock(SDL_FRect rect, int r, int g, int b) {
-    int i, j, cX = 0, cY = 0;
-    int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
-    
-    int cR = SDL_clamp(r-45, 0, 255);
-    int cG = SDL_clamp(g-45, 0, 255);
-    int cB = SDL_clamp(b-45, 0, 255);
-
-    int bR = SDL_clamp(r-90, 0, 255);
-    int bG = SDL_clamp(g-90, 0, 255);
-    int bB = SDL_clamp(b-90, 0, 255);
-
-    SDL_FRect pixelRect;
-    pixelRect.w = pixelRect.h = 1;
-    for (i = minY; i <= maxY; i++) {
-        cY++;
-        for (j = minX; j <= maxX; j++) { 
-            cX++;
-            if (i > minY+3 && i < maxY-3 && j > minX+3 && j < maxX-3) {
-                SDL_SetRenderDrawColor(renderer, cR, cG, cB, SDL_ALPHA_OPAQUE); 
-            } else if ((-cX+rect.w) - cY < -1) {
-                SDL_SetRenderDrawColor(renderer, bR, bG, bB, SDL_ALPHA_OPAQUE); 
-            } else {
-                SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
-            }
-            pixelRect.y = i;
-            pixelRect.x = j;
-            SDL_RenderFillRect(renderer, &pixelRect);
-        }
-        cX = 0;
-    }
-}
-
 bool toStop = false;
 int posX = 0, posY = 0;
 int currentMove = 0, currentColour = 1;
@@ -666,7 +710,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     if (titleCard) {
         if (now - lastChange >= 500) {
-            printf("Changing colours to colour %d (%d, %d, %d) at block %d (t = %d)\n", currentColour, colour[currentColour].r, colour[currentColour].g, colour[currentColour].b, currentMove, now);
             if (currentMove == 6) {
                 currentMove = 0;
                 currentColour++;
@@ -695,7 +738,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Trect, titleTetroes[countB].r, titleTetroes[countB].g, titleTetroes[countB].b);
+                        displayBlock(Trect, titleTetroes[countB].r, titleTetroes[countB].g, titleTetroes[countB].b, false);
                     }
                 }
             }
@@ -705,6 +748,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     if (winning) {
         displayStaticTexture();
         displayText(scoreString, (bWidthMax*TETROMINO_BLOCK_SIZE)+60, (bHeightMin*TETROMINO_BLOCK_SIZE)+49, globalFont, 255, 255, 255);
+        int countBlocks = 0, linesCleared = 0;
+        char incompleteScore[7];
 
         if (now - lastFallTime >= 1000) {
             for (int a = 0; a < 4; a++) {
@@ -721,7 +766,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             if (toStop == true) {
                 toStop = false;
                 falling = false;
-                printf("Stopped Falling: at %d above %d\n", tetArray[currentBlock].y, tetArray[currentBlock].y+1);
                 //set block
                 for (int k = 0; k < 4; k++) {
                     for (int l = 0; l < 4; l++) {
@@ -743,19 +787,58 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 tetArray[currentBlock].x = 4;
                 tetArray[currentBlock].y = 1;
 
+                //check if row filled
+                for (int l = 1; l <= 20; l++) {
+                    countBlocks = 0;
+                    for (int k = 1; k <= 10 ; k++) {
+                        if (filledBlocks[l][k].v == true) {
+                            countBlocks++;
+                        }
+                    }
+                    if (countBlocks == 10) {
+                        moveBoardDown(l);
+                        linesCleared++;
+                    }
+                }
+
+                if (linesCleared > 0) {
+                    switch (linesCleared) {
+                        case 1:
+                            score += 40;
+                            break;
+                        case 2:
+                            score += 100;
+                            break;
+                        case 3:
+                            score += 300;
+                            break;
+                        case 4:
+                            score += 1200;
+                            break;
+                    }
+
+                    sprintf(incompleteScore, "%d", score);
+                    while (strlen(incompleteScore) != 7) {
+                        prependChar(incompleteScore, '0');
+                    }
+                    strcpy(scoreString, incompleteScore);
+                }
+
+                buildBoardTexture();
+
                 if (filledBlocks[1][5].v == true) {
                     winning = false;
                 }
             } else {
-                printf("Not Stopped Falling: at %d above %d\n", tetArray[currentBlock].y, tetArray[currentBlock].y+1);
                 if (toStop == false) {
                     tetArray[currentBlock].y += 1;
                 }  
-                printf("Fell to %d at %llu\n", tetArray[currentBlock].y, now);   
             }
 
             lastFallTime = now;
         }
+
+        renderBoard();
 
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
@@ -768,64 +851,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlock(Brect, tetArray[currentBlock].r, tetArray[currentBlock].g, tetArray[currentBlock].b);
+                    displayBlock(Brect, tetArray[currentBlock].r, tetArray[currentBlock].g, tetArray[currentBlock].b, false);
                 }
             }
         }
 
-        //Optimisation idea: use a single map/image/texture/surdace or whatever to display the board, 
-        //and recalibrate it when there are updates
-        for (int i = 0; i < 22; i++) { 
-            for (int j = 0; j < 12; j++) {
-                if (filledBlocks[i][j].v == true) {
-                    rects[0].x = (j + bWidthMin) * TETROMINO_BLOCK_SIZE;
-                    rects[0].y = (i + bHeightMin) * TETROMINO_BLOCK_SIZE;
-                    rects[0].w = rects[0].h = TETROMINO_BLOCK_SIZE;
-                    displayBlock(rects[0], filledBlocks[i][j].r, filledBlocks[i][j].g, filledBlocks[i][j].b);
-                }
-            }
-        }
-
-        int linesCleared = 0;
-
-        //check if row filled
-        int countBlocks = 0;
-        for (int l = 1; l <= 20; l++) {
-            countBlocks = 0;
-            for (int k = 1; k <= 10 ; k++) {
-                if (filledBlocks[l][k].v == true) {
-                    countBlocks++;
-                }
-            }
-            if (countBlocks == 10) {
-                moveBoardDown(l);
-                linesCleared++;
-            }
-        }
-
-        switch (linesCleared) {
-            case 1:
-                score += 40;
-                break;
-            case 2:
-                score += 100;
-                break;
-            case 3:
-                score += 300;
-                break;
-            case 4:
-                score += 1200;
-                break;
-        }
-
-        char incompleteScore[7];
-        sprintf(incompleteScore, "%d", score);
-        while (strlen(incompleteScore) != 7) {
-            prependChar(incompleteScore, '0');
-        }
-
-        strcpy(scoreString, incompleteScore);
-        
     } else if (titleCard == false) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
         SDL_RenderClear(renderer);
