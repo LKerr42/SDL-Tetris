@@ -21,6 +21,8 @@ int bWidthMin, bWidthMax, bHeightMin, bHeightMax;
 int currentBlock = 0, score = 0;
 float textW, textH;
 
+int nextBlocks[4];
+
 bool falling = true, winning = false, titleCard = true;
 char scoreString[7] = "0000000";
 
@@ -342,6 +344,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         }
     }
 
+    for (int k = 0; k < 4; k++) {
+        nextBlocks[k] = SDL_rand(7);
+    }
+
     SDL_SetAppMetadata("Play Tetis!", "0.5.0", "com/LKerr42/SDL-Tetris.github");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -557,6 +563,9 @@ void resetGame() {
     resetBoard();
     for (int i = 0; i < 7; i++) {
         scoreString[i] = '0';
+        if (i < 4) {
+            nextBlocks[i] = SDL_rand(7);
+        }
     }
     score = 0;
     heldtet = -1;
@@ -614,7 +623,11 @@ void handleKeyboardInput(SDL_Scancode event) {
                 currentBlock = temp;
 
                 if (currentBlock == -1) { //if starting
-                    currentBlock = SDL_rand(7);
+                    currentBlock = nextBlocks[0];
+                    for (int n = 0; n < 4; n++) {
+                        nextBlocks[n] = nextBlocks[n+1];
+                    }
+                    nextBlocks[3] = SDL_rand(7); 
                 }
                 tetArray[currentBlock].x = 4;
                 tetArray[currentBlock].y = 1;
@@ -625,7 +638,6 @@ void handleKeyboardInput(SDL_Scancode event) {
             if (titleCard) {
                 titleCard = false;
                 winning = true;
-                printf("heldtet before: %d", heldtet);
             }
             break;
         }
@@ -854,7 +866,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 }
 
                 //reset block
-                currentBlock = SDL_rand(7);
+                currentBlock = nextBlocks[0];
+                for (int n = 0; n < 4; n++) {
+                    nextBlocks[n] = nextBlocks[n+1];
+                }
+                nextBlocks[3] = SDL_rand(7); 
                 falling = true;
                 tetArray[currentBlock].x = 4;
                 tetArray[currentBlock].y = 1;
@@ -936,16 +952,17 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
 
+        int baseX = (bWidthMin*TETROMINO_BLOCK_SIZE)-180 + (TETROMINO_BLOCK_SIZE << 1);
+        int baseY = (bHeightMin*TETROMINO_BLOCK_SIZE)+70;
+
         //display held tetromino
         if (heldtet != -1) {
             for (int k = 0; k < 4; k++) {
                 for (int l = 0; l < 4; l++) {
                     if (shapes[heldtet][k][l] == 1) {
-                        posX = l;
-                        posY = k;
                         SDL_FRect Hrect = {
-                            posX * TETROMINO_BLOCK_SIZE + (bWidthMin*TETROMINO_BLOCK_SIZE)-180 + (TETROMINO_BLOCK_SIZE << 1),
-                            posY * TETROMINO_BLOCK_SIZE + (bHeightMin*TETROMINO_BLOCK_SIZE)+70,
+                            l * TETROMINO_BLOCK_SIZE + baseX,
+                            k * TETROMINO_BLOCK_SIZE + baseY,
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
@@ -953,6 +970,28 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     }
                 }
             } 
+        }
+
+        baseX = (bWidthMax * TETROMINO_BLOCK_SIZE) + 60;
+        baseY = (bHeightMin * TETROMINO_BLOCK_SIZE) + 150;
+
+        //display next blocks
+        for (int block = 0; block < 4; block++) {
+            for (int d = 0; d < 4; d++) {
+                for (int e = 0; e < 4; e++) {
+                    if (shapes[nextBlocks[block]][d][e] == 1) {
+                        posX = e * TETROMINO_BLOCK_SIZE;
+                        posY = d * TETROMINO_BLOCK_SIZE + ((TETROMINO_BLOCK_SIZE*3) * block);
+                        SDL_FRect Nrect = {
+                            posX + baseX,
+                            posY + baseY,
+                            TETROMINO_BLOCK_SIZE,
+                            TETROMINO_BLOCK_SIZE
+                        };
+                        displayBlock(Nrect, tetArray[nextBlocks[block]].r, tetArray[nextBlocks[block]].g, tetArray[nextBlocks[block]].b, false);
+                    }
+                }
+            }
         }
 
     } else if (titleCard == false) { //lose card
