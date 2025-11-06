@@ -13,6 +13,7 @@
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
+static SDL_AudioStream *SFXstream = NULL;
 
 SDL_Texture *staticText;
 
@@ -75,8 +76,10 @@ typedef struct {
     char source[32];
     Uint8 *audio_buff;
     Uint32 audio_len;
-} WAVstruct;
-WAVstruct holyMoly;
+    Uint32 cursor;
+    bool playing;
+} sound;
+sound holyMoly;
 
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
@@ -323,81 +326,46 @@ void renderBoard() {
     SDL_RenderTexture(renderer, boardTexture, NULL, &displayRect);
 }
 
-SDL_AudioStream *stream;
+SDL_AudioSpec spec;
 
-void initaliseAudioFile(WAVstruct *wavFile, char path[]) {
-    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "10");     // request ~10ms output buffer
-
-    SDL_AudioSpec requested = {0};
-    requested.format = SDL_AUDIO_F32;
-    requested.channels = 2;
-    requested.freq = 128;
-
-    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(
-        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-        &requested
-    );
-
-    /*SDL_AudioCVT cvt;
-    SDL_BuildAudioCVT(&cvt,
-        fileSpec.format, fileSpec.channels, fileSpec.freq,
-        obtained.format, obtained.channels, obtained.freq);
-
-    cvt.len = wavFile->audio_len;
-    cvt.buf = malloc(cvt.len * cvt.len_mult);
-    memcpy(cvt.buf, wavFile->audio_buff, wavFile->audio_len);
-    SDL_ConvertAudio(&cvt);
-
-    wavFile->audio_buff = cvt.buf;
-    wavFile->audio_len = cvt.len_cvt;*/
-
-    
+void initaliseAudioFile(sound *wavFile, char path[]) {
     strcpy(wavFile -> source, path);
     wavFile -> audio_buff = NULL;
     wavFile -> audio_len = 0;
-    if (!SDL_LoadWAV(wavFile->source, &requested, &wavFile->audio_buff, &wavFile->audio_len)) {
-        SDL_Log("SDL_LoadWAV failed: %s", SDL_GetError());
+    wavFile -> playing = false;
+    wavFile -> cursor = 0;
+
+    if (!SDL_LoadWAV(path, &spec, &wavFile->audio_buff, & wavFile->audio_len)) {
+        SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
     }
 
-    stream = SDL_OpenAudioDeviceStream(
-        dev,
-        &requested,
-        NULL,
-        NULL
-    );
-    if (!stream) {
-        SDL_Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
+    SFXstream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+    if (!SFXstream) {
+        SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
     }
-    SDL_SetAudioStreamFormat(stream, &requested, &requested); // ensure no resampling
-    SDL_ResumeAudioStreamDevice(stream);
+    SDL_ResumeAudioStreamDevice(SFXstream);
 }
 
-void debug_print_audio_latency() {
-    int bytesQueued = SDL_GetAudioStreamQueued(stream);
-    if (bytesQueued < 0) {
-        SDL_Log("SDL_GetAudioStreamQueued failed: %s", SDL_GetError());
-        return;
+void playWAV(sound *wavFile) {
+    if (!wavFile->playing) return;
+
+    int queued = SDL_GetAudioStreamQueued(SFXstream);
+
+    Uint32 remaining = wavFile->audio_len - wavFile->cursor;
+
+    if (queued < 48000) {
+        if (remaining > 0) {
+            SDL_PutAudioStreamData(SFXstream,
+                                   wavFile->audio_buff + wavFile->cursor,
+                                   remaining);
+            wavFile->cursor += remaining;
+        }
     }
 
-    // size of 1 frame = channels * sizeof(float)
-    int frameSize = 2 * sizeof(float);  
-    int framesQueued = bytesQueued / frameSize;
-
-    // convert frames into milliseconds based on device frequency
-    int ms = (int)((framesQueued * 1000.0f) / 48000.0f);
-
-    SDL_Log("Audio queued = %d bytes (~%d ms latency)", bytesQueued, ms);
-}
-
-void playWAV(WAVstruct *wavFile) {
-    SDL_FlushAudioStream(stream); // clears ANY pending audio
-
-    // Push sound immediately (no queue buildup)
-    if (!SDL_PutAudioStreamData(stream, wavFile->audio_buff, wavFile->audio_len)) {
-        SDL_Log("SDL_PutAudioStreamData failed: %s", SDL_GetError());
+    if (wavFile->cursor >= wavFile->audio_len && queued == 0) {
+        wavFile->playing = false;
+        wavFile->cursor = 0;
     }
-    //printf("Sound %s played\n", wavFile->source);
-    debug_print_audio_latency();
 }
 
 /* This function runs once at startup. */
@@ -487,7 +455,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         SDL_Log("SDL_Init AUDIO failed: %s", SDL_GetError());
     }
 
-    initaliseAudioFile(&holyMoly, "assets/HolyMoly.wav");
+    initaliseAudioFile(&holyMoly, "assets/New_Project.wav");
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -708,7 +676,7 @@ void handleKeyboardInput(SDL_Scancode event) {
         }
         case SDL_SCANCODE_SPACE: {
             printf("Space pressed\n");
-            playWAV(&holyMoly);
+            holyMoly.playing = true;
             if (winning) {
                 //swap values
                 int temp = heldtet;
@@ -876,6 +844,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
+
+    playWAV(&holyMoly);
 
     int halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     int halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
@@ -1107,5 +1077,4 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     SDL_DestroyTexture(staticText);
     TTF_CloseFont(globalFont);
     TTF_Quit();
-    SDL_DestroyAudioStream(stream);
 }
