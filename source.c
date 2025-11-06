@@ -3,6 +3,7 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3/SDL_audio.h>
+#include <SDL3/SDL_hints.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> 
@@ -69,6 +70,13 @@ typedef struct {
     int b;
 } colours;
 colours colour[7];
+
+typedef struct {
+    char source[32];
+    Uint8 *audio_buff;
+    Uint32 audio_len;
+} WAVstruct;
+WAVstruct holyMoly;
 
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
@@ -315,6 +323,83 @@ void renderBoard() {
     SDL_RenderTexture(renderer, boardTexture, NULL, &displayRect);
 }
 
+SDL_AudioStream *stream;
+
+void initaliseAudioFile(WAVstruct *wavFile, char path[]) {
+    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "10");     // request ~10ms output buffer
+
+    SDL_AudioSpec requested = {0};
+    requested.format = SDL_AUDIO_F32;
+    requested.channels = 2;
+    requested.freq = 128;
+
+    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(
+        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+        &requested
+    );
+
+    /*SDL_AudioCVT cvt;
+    SDL_BuildAudioCVT(&cvt,
+        fileSpec.format, fileSpec.channels, fileSpec.freq,
+        obtained.format, obtained.channels, obtained.freq);
+
+    cvt.len = wavFile->audio_len;
+    cvt.buf = malloc(cvt.len * cvt.len_mult);
+    memcpy(cvt.buf, wavFile->audio_buff, wavFile->audio_len);
+    SDL_ConvertAudio(&cvt);
+
+    wavFile->audio_buff = cvt.buf;
+    wavFile->audio_len = cvt.len_cvt;*/
+
+    
+    strcpy(wavFile -> source, path);
+    wavFile -> audio_buff = NULL;
+    wavFile -> audio_len = 0;
+    if (!SDL_LoadWAV(wavFile->source, &requested, &wavFile->audio_buff, &wavFile->audio_len)) {
+        SDL_Log("SDL_LoadWAV failed: %s", SDL_GetError());
+    }
+
+    stream = SDL_OpenAudioDeviceStream(
+        dev,
+        &requested,
+        NULL,
+        NULL
+    );
+    if (!stream) {
+        SDL_Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
+    }
+    SDL_SetAudioStreamFormat(stream, &requested, &requested); // ensure no resampling
+    SDL_ResumeAudioStreamDevice(stream);
+}
+
+void debug_print_audio_latency() {
+    int bytesQueued = SDL_GetAudioStreamQueued(stream);
+    if (bytesQueued < 0) {
+        SDL_Log("SDL_GetAudioStreamQueued failed: %s", SDL_GetError());
+        return;
+    }
+
+    // size of 1 frame = channels * sizeof(float)
+    int frameSize = 2 * sizeof(float);  
+    int framesQueued = bytesQueued / frameSize;
+
+    // convert frames into milliseconds based on device frequency
+    int ms = (int)((framesQueued * 1000.0f) / 48000.0f);
+
+    SDL_Log("Audio queued = %d bytes (~%d ms latency)", bytesQueued, ms);
+}
+
+void playWAV(WAVstruct *wavFile) {
+    SDL_FlushAudioStream(stream); // clears ANY pending audio
+
+    // Push sound immediately (no queue buildup)
+    if (!SDL_PutAudioStreamData(stream, wavFile->audio_buff, wavFile->audio_len)) {
+        SDL_Log("SDL_PutAudioStreamData failed: %s", SDL_GetError());
+    }
+    //printf("Sound %s played\n", wavFile->source);
+    debug_print_audio_latency();
+}
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     bWidthMin = ((width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
@@ -398,9 +483,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     buildBoardTexture();
 
-    if (!MIX_Init()) {
-        SDL_Log("Failed to initalise SDL Mix: %s", SDL_GetError());
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        SDL_Log("SDL_Init AUDIO failed: %s", SDL_GetError());
     }
+
+    initaliseAudioFile(&holyMoly, "assets/HolyMoly.wav");
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -621,6 +708,7 @@ void handleKeyboardInput(SDL_Scancode event) {
         }
         case SDL_SCANCODE_SPACE: {
             printf("Space pressed\n");
+            playWAV(&holyMoly);
             if (winning) {
                 //swap values
                 int temp = heldtet;
@@ -1019,4 +1107,5 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     SDL_DestroyTexture(staticText);
     TTF_CloseFont(globalFont);
     TTF_Quit();
+    SDL_DestroyAudioStream(stream);
 }
