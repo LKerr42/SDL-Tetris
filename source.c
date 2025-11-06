@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3/SDL_audio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> 
@@ -396,6 +397,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     buildBoardTexture();
+
+    if (!MIX_Init()) {
+        SDL_Log("Failed to initalise SDL Mix: %s", SDL_GetError());
+    }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
