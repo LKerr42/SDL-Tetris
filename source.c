@@ -79,7 +79,7 @@ typedef struct {
     Uint32 cursor;
     bool playing;
 } sound;
-sound holyMoly;
+sound sfx[8];
 
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
@@ -244,8 +244,9 @@ void setupTitleBlocks() {
 }
 
 SDL_Texture* boardTexture;
+SDL_Texture* nextTexture;
 
-void displayBlock(SDL_FRect rect, int r, int g, int b, bool drawTexture) {
+void displayBlock(SDL_FRect rect, int r, int g, int b, bool drawTexture, SDL_Texture* texture) {
     int i, j, cX = 0, cY = 0;
     int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
     
@@ -258,7 +259,7 @@ void displayBlock(SDL_FRect rect, int r, int g, int b, bool drawTexture) {
     int bB = SDL_clamp(b-90, 0, 255);
 
     if (drawTexture) {
-        SDL_SetRenderTarget(renderer, boardTexture);
+        SDL_SetRenderTarget(renderer, texture);
     }
 
     SDL_FRect pixelRect;
@@ -307,7 +308,7 @@ void buildBoardTexture() {
                              filledBlocks[i][j].r,
                              filledBlocks[i][j].g,
                              filledBlocks[i][j].b,
-                             true);   // draw to texture
+                             true, boardTexture);   // draw to texture
             }
         }
     }
@@ -324,6 +325,50 @@ void renderBoard() {
     };
 
     SDL_RenderTexture(renderer, boardTexture, NULL, &displayRect);
+}
+
+void updateNextBlocks() { //This is messing with the array for no reason smh
+    SDL_SetRenderTarget(renderer, nextTexture);
+
+    // Clear previous contents
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    int posX, posY;
+
+    //display next blocks
+    for (int block = 0; block < 4; block++) {
+        for (int d = 0; d < 4; d++) {
+            for (int e = 0; e < 4; e++) {
+                if (shapes[nextBlocks[block]][d][e] == 1) {
+                    posX = e * TETROMINO_BLOCK_SIZE;
+                    posY = d * TETROMINO_BLOCK_SIZE + ((TETROMINO_BLOCK_SIZE*3) * block);
+                    SDL_FRect Nrect = {
+                        posX,
+                        posY,
+                        TETROMINO_BLOCK_SIZE,
+                        TETROMINO_BLOCK_SIZE
+                    };
+                    displayBlock(Nrect, tetArray[nextBlocks[block]].r, tetArray[nextBlocks[block]].g, tetArray[nextBlocks[block]].b, true, nextTexture);
+                }
+            }
+        }
+    }
+
+    SDL_SetRenderTarget(renderer, NULL); // back to screen
+}
+
+void displayNextBlocks() {
+    /*        (bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
+        (bHeightMin * TETROMINO_BLOCK_SIZE) + 150,*/
+    SDL_FRect displayRect = {
+        (bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
+        (bHeightMin * TETROMINO_BLOCK_SIZE) + 150,
+        TETROMINO_BLOCK_SIZE << 2,
+        (TETROMINO_BLOCK_SIZE << 3) + (TETROMINO_BLOCK_SIZE << 2)
+    };
+
+    SDL_RenderTexture(renderer, nextTexture, NULL, &displayRect);
 }
 
 SDL_AudioSpec spec;
@@ -368,6 +413,17 @@ void playWAV(sound *wavFile) {
     }
 }
 
+char fileNames[8][16] = {
+    "holyMoly",
+    "land",
+    "moveLeft",
+    "moveRight",
+    "open",
+    "spinCCW",
+    "spinCW",
+    "switch"
+};
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     bWidthMin = ((width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
@@ -396,10 +452,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
                 filledBlocks[i][j].v = false;
             }
         }
-    }
-
-    for (int k = 0; k < 4; k++) {
-        nextBlocks[k] = SDL_rand(7);
     }
 
     SDL_SetAppMetadata("Play Tetis!", "0.5.0", "com/LKerr42/SDL-Tetris.github");
@@ -451,11 +503,33 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     buildBoardTexture();
 
+    nextTexture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        TETROMINO_BLOCK_SIZE << 2,
+        (TETROMINO_BLOCK_SIZE << 3) + (TETROMINO_BLOCK_SIZE << 2)
+    );
+    if (!nextTexture) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
+    for (int k = 0; k < 4; k++) {
+        nextBlocks[k] = SDL_rand(7);
+    }
+
+    updateNextBlocks();
+
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         SDL_Log("SDL_Init AUDIO failed: %s", SDL_GetError());
     }
 
-    initaliseAudioFile(&holyMoly, "assets/New_Project.wav");
+    char *wavPath = NULL;
+    for (int i = 0; i < 8; i++) {
+        SDL_asprintf(&wavPath, "%s%s.wav", "assets/audio/", fileNames[i]);
+        initaliseAudioFile(&sfx[i], wavPath);
+    }
+    //initaliseAudioFile(&holyMoly, "assets/audio/switch.wav");
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -614,6 +688,8 @@ void resetBoard() {
         }
     }
     buildBoardTexture();
+    updateNextBlocks();
+    displayNextBlocks();
     renderBoard();
 }
 
@@ -633,6 +709,11 @@ void resetGame() {
     tetArray[currentBlock].x = 4;
     tetArray[currentBlock].y = 1;
     winning = true;
+}
+
+void startSound(sound *s) {
+    s -> playing = true;
+    SDL_ClearAudioStream(SFXstream);
 }
 
 void handleKeyboardInput(SDL_Scancode event) {
@@ -674,10 +755,14 @@ void handleKeyboardInput(SDL_Scancode event) {
             }
             break;
         }
+        case SDL_SCANCODE_H: {
+            startSound(&sfx[0]);
+            break;
+        }
         case SDL_SCANCODE_SPACE: {
             printf("Space pressed\n");
-            holyMoly.playing = true;
             if (winning) {
+                startSound(&sfx[7]);
                 //swap values
                 int temp = heldtet;
                 heldtet = currentBlock;
@@ -685,18 +770,21 @@ void handleKeyboardInput(SDL_Scancode event) {
 
                 if (currentBlock == -1) { //if starting
                     currentBlock = nextBlocks[0];
-                    for (int n = 0; n < 4; n++) {
+                    for (int n = 0; n < 3; n++) {
                         nextBlocks[n] = nextBlocks[n+1];
                     }
-                    nextBlocks[3] = SDL_rand(7); 
+                    nextBlocks[3] = (int)SDL_rand(7); 
                 }
                 tetArray[currentBlock].x = 4;
                 tetArray[currentBlock].y = 1;
+                updateNextBlocks();
             } else {
+                startSound(&sfx[4]);
                 resetGame();
             }
 
             if (titleCard) {
+                startSound(&sfx[4]);
                 titleCard = false;
                 winning = true;
             }
@@ -832,7 +920,7 @@ void displayStaticTexture() {
     SDL_RenderTexture(renderer, staticText, NULL, &textRect);
 }
 
-bool toStop = false;
+bool toStop = false, firstRun = true;
 int posX = 0, posY = 0;
 int currentMove = 0, currentColour = 1;
 /* This function runs once per frame, and is the heart of the program. */
@@ -845,7 +933,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    playWAV(&holyMoly);
+    for (int I = 0; I < 8; I++) {
+        if (sfx[I].playing == true) {
+            playWAV(&sfx[I]);
+        }
+    }
 
     int halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     int halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
@@ -884,7 +976,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Trect, titleTetroes[countB].r, titleTetroes[countB].g, titleTetroes[countB].b, false);
+                        displayBlock(Trect, titleTetroes[countB].r, titleTetroes[countB].g, titleTetroes[countB].b, false, NULL);
                     }
                 }
             }
@@ -893,6 +985,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     if (winning) {
         displayStaticTexture();
+        //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
+        if (firstRun == true) {
+            updateNextBlocks(); 
+            firstRun = false;
+        }
         displayText(scoreString, (bWidthMax*TETROMINO_BLOCK_SIZE)+60, (bHeightMin*TETROMINO_BLOCK_SIZE)+49, globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
         char incompleteScore[7];
@@ -930,13 +1027,15 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
                 //reset block
                 currentBlock = nextBlocks[0];
-                for (int n = 0; n < 4; n++) {
+                for (int n = 0; n < 3; n++) {
                     nextBlocks[n] = nextBlocks[n+1];
                 }
-                nextBlocks[3] = SDL_rand(7); 
+                nextBlocks[3] = (int)SDL_rand(7); 
                 falling = true;
                 tetArray[currentBlock].x = 4;
                 tetArray[currentBlock].y = 1;
+                
+                updateNextBlocks();
 
                 //check if row filled
                 for (int l = 1; l <= 20; l++) {
@@ -996,6 +1095,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             lastFallTime = now;
         }
 
+        
+        displayNextBlocks();
         renderBoard();
 
         //display falling tetromino
@@ -1010,7 +1111,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlock(Brect, tetArray[currentBlock].r, tetArray[currentBlock].g, tetArray[currentBlock].b, false);
+                    displayBlock(Brect, tetArray[currentBlock].r, tetArray[currentBlock].g, tetArray[currentBlock].b, false, NULL);
                 }
             }
         }
@@ -1029,32 +1130,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Hrect, tetArray[heldtet].r, tetArray[heldtet].g, tetArray[heldtet].b, false);
+                        displayBlock(Hrect, tetArray[heldtet].r, tetArray[heldtet].g, tetArray[heldtet].b, false, NULL);
                     }
                 }
             } 
-        }
-
-        baseX = (bWidthMax * TETROMINO_BLOCK_SIZE) + 60;
-        baseY = (bHeightMin * TETROMINO_BLOCK_SIZE) + 150;
-
-        //display next blocks
-        for (int block = 0; block < 4; block++) {
-            for (int d = 0; d < 4; d++) {
-                for (int e = 0; e < 4; e++) {
-                    if (shapes[nextBlocks[block]][d][e] == 1) {
-                        posX = e * TETROMINO_BLOCK_SIZE;
-                        posY = d * TETROMINO_BLOCK_SIZE + ((TETROMINO_BLOCK_SIZE*3) * block);
-                        SDL_FRect Nrect = {
-                            posX + baseX,
-                            posY + baseY,
-                            TETROMINO_BLOCK_SIZE,
-                            TETROMINO_BLOCK_SIZE
-                        };
-                        displayBlock(Nrect, tetArray[nextBlocks[block]].r, tetArray[nextBlocks[block]].g, tetArray[nextBlocks[block]].b, false);
-                    }
-                }
-            }
         }
 
     } else if (titleCard == false) { //lose card
