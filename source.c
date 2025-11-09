@@ -9,6 +9,15 @@
 #include <string.h> 
 
 #define TETROMINO_BLOCK_SIZE 20
+#define CLEAR     0
+#define HOLYMOLY  1
+#define LAND      2
+#define MOVELEFT  3
+#define MOVERIGHT 4
+#define OPEN      5
+#define SPINCCW   6
+#define SPINCW    7
+#define SWITCH    8
 
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
@@ -26,7 +35,7 @@ float textW, textH;
 
 int nextBlocks[4];
 
-bool falling = true, winning = false, titleCard = true;
+bool falling = true, winning = false, titleCard = true, firstRun = true;;
 char scoreString[7] = "0000000";
 
 TTF_Font* globalFont;
@@ -79,7 +88,7 @@ typedef struct {
     Uint32 cursor;
     bool playing;
 } sound;
-sound sfx[8];
+sound sfx[9];
 
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
@@ -373,6 +382,11 @@ void displayNextBlocks() {
 
 SDL_AudioSpec spec;
 
+void startSound(sound *s) {
+    s -> playing = true;
+    SDL_ClearAudioStream(SFXstream);
+}
+
 void initaliseAudioFile(sound *wavFile, char path[]) {
     strcpy(wavFile -> source, path);
     wavFile -> audio_buff = NULL;
@@ -413,7 +427,8 @@ void playWAV(sound *wavFile) {
     }
 }
 
-char fileNames[8][16] = {
+char fileNames[9][16] = {
+    "clear",
     "holyMoly",
     "land",
     "moveLeft",
@@ -525,7 +540,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     char *wavPath = NULL;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 9; i++) {
         SDL_asprintf(&wavPath, "%s%s.wav", "assets/audio/", fileNames[i]);
         initaliseAudioFile(&sfx[i], wavPath);
     }
@@ -558,6 +573,7 @@ bool canMove(tetromino *t, int dx, int dy) {
 }
 
 void rotateTetrominoCW(tetromino *t) {
+    startSound(&sfx[SPINCW]);
     int N, Y, X, rx, ry;
     blockStruct temp[4][4];
     if (currentBlock == 0) {
@@ -617,6 +633,7 @@ void rotateTetrominoCW(tetromino *t) {
 }
 
 void rotateTetrominoCCW(tetromino *t) {
+    startSound(&sfx[SPINCCW]);
     int N, Y, X;
     blockStruct temp[4][4];
     if (currentBlock == 0) {
@@ -709,11 +726,7 @@ void resetGame() {
     tetArray[currentBlock].x = 4;
     tetArray[currentBlock].y = 1;
     winning = true;
-}
-
-void startSound(sound *s) {
-    s -> playing = true;
-    SDL_ClearAudioStream(SFXstream);
+    firstRun = true;
 }
 
 void handleKeyboardInput(SDL_Scancode event) {
@@ -721,12 +734,14 @@ void handleKeyboardInput(SDL_Scancode event) {
     switch (event) {
         case SDL_SCANCODE_LEFT: {
             if (canMove(&tetArray[currentBlock], -1, 0)) {
+                startSound(&sfx[MOVELEFT]);
                 tetArray[currentBlock].x -= 1;
             }
             break;
         }
         case SDL_SCANCODE_RIGHT: {
             if (canMove(&tetArray[currentBlock], 1, 0)) {
+                startSound(&sfx[MOVERIGHT]);
                 tetArray[currentBlock].x += 1;
             }
             break;
@@ -752,17 +767,18 @@ void handleKeyboardInput(SDL_Scancode event) {
         case SDL_SCANCODE_R: {
             if (winning) {
                 resetGame();
+                startSound(&sfx[OPEN]);
             }
             break;
         }
         case SDL_SCANCODE_H: {
-            startSound(&sfx[0]);
+            startSound(&sfx[HOLYMOLY]);
             break;
         }
         case SDL_SCANCODE_SPACE: {
             printf("Space pressed\n");
             if (winning) {
-                startSound(&sfx[7]);
+                startSound(&sfx[SWITCH]);
                 //swap values
                 int temp = heldtet;
                 heldtet = currentBlock;
@@ -779,12 +795,12 @@ void handleKeyboardInput(SDL_Scancode event) {
                 tetArray[currentBlock].y = 1;
                 updateNextBlocks();
             } else {
-                startSound(&sfx[4]);
+                startSound(&sfx[OPEN]);
                 resetGame();
             }
 
             if (titleCard) {
-                startSound(&sfx[4]);
+                startSound(&sfx[OPEN]);
                 titleCard = false;
                 winning = true;
             }
@@ -920,7 +936,7 @@ void displayStaticTexture() {
     SDL_RenderTexture(renderer, staticText, NULL, &textRect);
 }
 
-bool toStop = false, firstRun = true;
+bool toStop = false;
 int posX = 0, posY = 0;
 int currentMove = 0, currentColour = 1;
 /* This function runs once per frame, and is the heart of the program. */
@@ -933,9 +949,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    for (int I = 0; I < 8; I++) {
-        if (sfx[I].playing == true) {
-            playWAV(&sfx[I]);
+    for (int ii = 0; ii < 9; ii++) {
+        if (sfx[ii].playing == true) {
+            playWAV(&sfx[ii]);
         }
     }
 
@@ -1008,6 +1024,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 if (toStop == true) break;
             }
             if (toStop == true) {
+                startSound(&sfx[LAND]);
                 toStop = false;
                 falling = false;
                 //set block
@@ -1053,6 +1070,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
                 //update score
                 if (linesCleared > 0) {
+                    startSound(&sfx[CLEAR]);
                     switch (linesCleared) {
                         case 1:
                             score += 40;
