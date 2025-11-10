@@ -22,7 +22,6 @@
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
-static SDL_AudioStream *SFXstream = NULL;
 
 SDL_Texture *staticText;
 
@@ -87,11 +86,14 @@ typedef struct {
     Uint32 audio_len;
     Uint32 cursor;
     bool playing;
+    SDL_AudioStream *stream;
 } sound;
 sound sfx[9];
+sound mainTheme;
 
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
+void setupStaticText();
 
 void setBlockColour(blockStruct *block, int R, int G, int B) {
     block -> r = R;
@@ -118,8 +120,6 @@ void prependChar(char *str, char c) {
 
     str[0] = c;
 }
-
-void setupStaticText();
 
 int shapes[7][4][4] = {
     //Long boy
@@ -336,7 +336,7 @@ void renderBoard() {
     SDL_RenderTexture(renderer, boardTexture, NULL, &displayRect);
 }
 
-void updateNextBlocks() { //This is messing with the array for no reason smh
+void updateNextBlocks() {
     SDL_SetRenderTarget(renderer, nextTexture);
 
     // Clear previous contents
@@ -384,7 +384,7 @@ SDL_AudioSpec spec;
 
 void startSound(sound *s) {
     s -> playing = true;
-    SDL_ClearAudioStream(SFXstream);
+    SDL_ClearAudioStream(s->stream);
 }
 
 void initaliseAudioFile(sound *wavFile, char path[]) {
@@ -398,32 +398,38 @@ void initaliseAudioFile(sound *wavFile, char path[]) {
         SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
     }
 
-    SFXstream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
-    if (!SFXstream) {
+    wavFile -> stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+    if (!wavFile -> stream) {
         SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
     }
-    SDL_ResumeAudioStreamDevice(SFXstream);
+    SDL_ResumeAudioStreamDevice(wavFile -> stream);
 }
 
-void playWAV(sound *wavFile) {
-    if (!wavFile->playing) return;
+void playWAV(sound *wavFile, bool loop) {
+    if (!loop) {
+        if (!wavFile->playing) return;
 
-    int queued = SDL_GetAudioStreamQueued(SFXstream);
+        int queued = SDL_GetAudioStreamQueued(wavFile -> stream);
 
-    Uint32 remaining = wavFile->audio_len - wavFile->cursor;
+        Uint32 remaining = wavFile->audio_len - wavFile->cursor;
 
-    if (queued < 48000) {
-        if (remaining > 0) {
-            SDL_PutAudioStreamData(SFXstream,
-                                   wavFile->audio_buff + wavFile->cursor,
-                                   remaining);
-            wavFile->cursor += remaining;
+        if (queued < 48000) {
+            if (remaining > 0) {
+                SDL_PutAudioStreamData(wavFile -> stream,
+                                    wavFile->audio_buff + wavFile->cursor,
+                                    remaining);
+                wavFile->cursor += remaining;
+            }
         }
-    }
 
-    if (wavFile->cursor >= wavFile->audio_len && queued == 0) {
-        wavFile->playing = false;
-        wavFile->cursor = 0;
+        if (wavFile->cursor >= wavFile->audio_len && queued == 0) {
+            wavFile->playing = false;
+            wavFile->cursor = 0;
+        }
+    } else {
+        if (SDL_GetAudioStreamQueued(wavFile -> stream) < ((int) wavFile -> audio_len)) {
+            SDL_PutAudioStreamData(wavFile -> stream, wavFile -> audio_buff, (int) wavFile -> audio_len);
+        }
     }
 }
 
@@ -540,10 +546,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     char *wavPath = NULL;
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < SDL_arraysize(sfx); i++) {
         SDL_asprintf(&wavPath, "%s%s.wav", "assets/audio/", fileNames[i]);
         initaliseAudioFile(&sfx[i], wavPath);
     }
+    initaliseAudioFile(&mainTheme, "assets/audio/Tetris.wav");
     //initaliseAudioFile(&holyMoly, "assets/audio/switch.wav");
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -949,11 +956,12 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    for (int ii = 0; ii < 9; ii++) {
+    for (int ii = 0; ii < SDL_arraysize(sfx); ii++) {
         if (sfx[ii].playing == true) {
-            playWAV(&sfx[ii]);
+            playWAV(&sfx[ii], false);
         }
     }
+    playWAV(&mainTheme, true);
 
     int halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     int halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
@@ -1174,4 +1182,12 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     SDL_DestroyTexture(staticText);
     TTF_CloseFont(globalFont);
     TTF_Quit();
+    for (int i = 0; i < SDL_arraysize(sfx); i++) {
+        if (sfx[i].stream) {
+            SDL_DestroyAudioStream(sfx[i].stream);
+        }
+        SDL_free(sfx[i].audio_buff);
+    }
+    SDL_DestroyAudioStream(mainTheme.stream);
+    SDL_free(mainTheme.audio_buff);
 }
