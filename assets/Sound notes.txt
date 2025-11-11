@@ -1,6 +1,0 @@
-move left: single lower mid note
-move right: single higher mid note
-land: crunchy snare/bass drum
-spin CW: two high-mid notes ascending 
-spin CCW: two high-mid notes descending (reverse of CW)
-theme song: normal Tetris theme, add your own spin, another one later

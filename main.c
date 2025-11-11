@@ -3,7 +3,7 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3/SDL_audio.h>
-#include <SDL3/SDL_hints.h>
+#include <SDL3_image/SDL_image.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> 
@@ -252,8 +252,9 @@ void setupTitleBlocks() {
     }
 }
 
-SDL_Texture* boardTexture;
-SDL_Texture* nextTexture;
+SDL_Texture *boardTexture;
+SDL_Texture *nextTexture;
+SDL_Surface *icon;
 
 void displayBlock(SDL_FRect rect, int r, int g, int b, bool drawTexture, SDL_Texture* texture) {
     int i, j, cX = 0, cY = 0;
@@ -494,6 +495,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         &window, &renderer
     );
 
+    icon = IMG_Load("assets/iconT.ico");
+    SDL_SetWindowIcon(window, icon);
+
     if (!wind) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -551,6 +555,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         initaliseAudioFile(&sfx[i], wavPath);
     }
     initaliseAudioFile(&mainTheme, "assets/audio/Tetris.wav");
+    SDL_SetAudioStreamGain(mainTheme.stream, 0.5f);
     //initaliseAudioFile(&holyMoly, "assets/audio/switch.wav");
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -1190,4 +1195,5 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     }
     SDL_DestroyAudioStream(mainTheme.stream);
     SDL_free(mainTheme.audio_buff);
+    SDL_DestroySurface(icon);
 }

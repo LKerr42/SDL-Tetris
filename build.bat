@@ -3,13 +3,16 @@ echo Compiling...
 
 REM Compile the program
 REM -I "C:\Users\LiamK\Documents\Uni\SDL3_mixer\include" ^  -L "C:\Users\LiamK\Documents\Uni\SDL3_mixer\lib" ^  -l SDL3_mixer
-gcc -g source.c -o source.exe ^
+gcc -g main.c resources.o -o tetris.exe ^
     -I "C:\Users\LiamK\Documents\Uni\SDL\x86_64-w64-mingw32\include" ^
     -I "C:\Users\LiamK\Documents\Uni\SDL3_ttf\x86_64-w64-mingw32\include" ^
+    -I "C:\Users\LiamK\Documents\Uni\SDL3_image\x86_64-w64-mingw32\include" ^
     -L "C:\Users\LiamK\Documents\Uni\SDL\x86_64-w64-mingw32\lib" ^
     -L "C:\Users\LiamK\Documents\Uni\SDL3_ttf\x86_64-w64-mingw32\lib" ^
+    -L "C:\Users\LiamK\Documents\Uni\SDL3_image\x86_64-w64-mingw32\lib" ^
     -l SDL3 ^
-    -l SDL3_ttf
+    -l SDL3_ttf ^
+    -l SDL3_image
 
 REM Check if compilation failed
 if errorlevel 1 (
@@ -24,4 +27,4 @@ echo Running program...
 echo.
 
 REM Run the program
-source.exe  
+tetris.exe  
