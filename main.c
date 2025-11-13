@@ -34,15 +34,12 @@ float textW, textH;
 
 int nextBlocks[4];
 
-bool falling = true, winning = false, titleCard = true, firstRun = true;;
+bool falling = true, winning = false, titleCard = true, firstRun = true;
 char scoreString[7] = "0000000";
 
 TTF_Font* globalFont;
 TTF_Font* globalFontS;
 
-// Idea: each block in a Tetromino is a different "object" within this struct, 
-// each with a different starting position and all with one colour.
-// Then they could be placed in the array with one loop
 typedef struct {
     int x;
     int y;
@@ -314,16 +311,12 @@ void buildBoardTexture() {
                 rect.x = j * TETROMINO_BLOCK_SIZE;
                 rect.y = i * TETROMINO_BLOCK_SIZE;
 
-                displayBlock(rect,
-                             filledBlocks[i][j].r,
-                             filledBlocks[i][j].g,
-                             filledBlocks[i][j].b,
-                             true, boardTexture);   // draw to texture
+                displayBlock(rect, filledBlocks[i][j].r, filledBlocks[i][j].g, filledBlocks[i][j].b, true, boardTexture);
             }
         }
     }
 
-    SDL_SetRenderTarget(renderer, NULL); // back to screen
+    SDL_SetRenderTarget(renderer, NULL);
 }
 
 void renderBoard() {
@@ -369,8 +362,6 @@ void updateNextBlocks() {
 }
 
 void displayNextBlocks() {
-    /*        (bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
-        (bHeightMin * TETROMINO_BLOCK_SIZE) + 150,*/
     SDL_FRect displayRect = {
         (bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
         (bHeightMin * TETROMINO_BLOCK_SIZE) + 150,
@@ -434,6 +425,10 @@ void playWAV(sound *wavFile, bool loop) {
     }
 }
 
+void restartMainTheme() {
+    SDL_ClearAudioStream(mainTheme.stream);
+}
+
 char fileNames[9][16] = {
     "clear",
     "holyMoly",
@@ -476,7 +471,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         }
     }
 
-    SDL_SetAppMetadata("Play Tetis!", "0.5.0", "com/LKerr42/SDL-Tetris.github");
+    SDL_SetAppMetadata("Play Tetis!", "0.6.0", "com/LKerr42/SDL-Tetris.github");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -497,6 +492,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     icon = IMG_Load("assets/iconT.ico");
     SDL_SetWindowIcon(window, icon);
+    SDL_DestroySurface(icon);
 
     if (!wind) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
@@ -556,6 +552,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
     initaliseAudioFile(&mainTheme, "assets/audio/Tetris.wav");
     SDL_SetAudioStreamGain(mainTheme.stream, 0.5f);
+    SDL_SetAudioStreamGain(sfx[LAND].stream, 1.5f);
+
     //initaliseAudioFile(&holyMoly, "assets/audio/switch.wav");
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -778,6 +776,7 @@ void handleKeyboardInput(SDL_Scancode event) {
         }
         case SDL_SCANCODE_R: {
             if (winning) {
+                restartMainTheme();
                 resetGame();
                 startSound(&sfx[OPEN]);
             }
@@ -788,7 +787,6 @@ void handleKeyboardInput(SDL_Scancode event) {
             break;
         }
         case SDL_SCANCODE_SPACE: {
-            printf("Space pressed\n");
             if (winning) {
                 startSound(&sfx[SWITCH]);
                 //swap values
@@ -808,10 +806,12 @@ void handleKeyboardInput(SDL_Scancode event) {
                 updateNextBlocks();
             } else {
                 startSound(&sfx[OPEN]);
+                restartMainTheme();
                 resetGame();
             }
 
             if (titleCard) {
+                restartMainTheme();
                 startSound(&sfx[OPEN]);
                 titleCard = false;
                 winning = true;
@@ -951,6 +951,7 @@ void displayStaticTexture() {
 bool toStop = false;
 int posX = 0, posY = 0;
 int currentMove = 0, currentColour = 1;
+char* finalScore = NULL;
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_FRect rects[20];
@@ -1113,6 +1114,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 for (int m = 1; m < 11; m++) {
                     if (filledBlocks[1][m].v == true) {
                         winning = false;
+                        SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
                         break;
                     }
                 }
@@ -1172,7 +1174,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         SDL_RenderClear(renderer);
         bool displayed = false;
         displayText("You Lost!", -1, -1, globalFont, 255, 255, 255);
-        displayText("Press space to start again", -1, (height >> 1) + 50, globalFontS, 255, 255, 255);
+        displayText(finalScore, -1, (height >> 1) + 50, globalFontS, 255, 255, 255);
+        displayText("Press space to start again", -1, (height >> 1) + 100, globalFontS, 255, 255, 255);
     }
 
     SDL_RenderPresent(renderer); // render everything
@@ -1195,5 +1198,4 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     }
     SDL_DestroyAudioStream(mainTheme.stream);
     SDL_free(mainTheme.audio_buff);
-    SDL_DestroySurface(icon);
 }
