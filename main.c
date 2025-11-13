@@ -13,7 +13,7 @@
 #define HOLYMOLY  1
 #define LAND      2
 #define MOVELEFT  3
-#define MOVERIGHT 4
+#define MOVERIGHT 4 
 #define OPEN      5
 #define SPINCCW   6
 #define SPINCW    7
