@@ -70,6 +70,7 @@ typedef struct {
 tetromino tetArray[7];
 tetromino titleTetroes[6];
 tetromino currentTet;
+tetromino wireframeTet;
 
 typedef struct {
     int r;
@@ -308,7 +309,11 @@ void displayBlockToTexture(SDL_FRect rect, int r, int g, int b, SDL_Texture* tex
         for (j = minX; j < maxX; j++) { 
             cX++;
             if (i > minY+3 && i < maxY-3 && j > minX+3 && j < maxX-3) {
-                SDL_SetRenderDrawColor(renderer, cR, cG, cB, SDL_ALPHA_OPAQUE); 
+                if (!isWireframe) {
+                    SDL_SetRenderDrawColor(renderer, cR, cG, cB, SDL_ALPHA_OPAQUE); 
+                } else {
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE); 
+                }
             } else if ((-cX+rect.w) - cY < -1) {
                 SDL_SetRenderDrawColor(renderer, bR, bG, bB, SDL_ALPHA_OPAQUE); 
             } else {
@@ -337,11 +342,25 @@ void buildBoardTexture() {
     for (int i = 0; i < 22; i++) { 
         for (int j = 0; j < 12; j++) {
             if (filledBlocks[i][j].v == true) {
-
                 rect.x = j * TETROMINO_BLOCK_SIZE;
                 rect.y = i * TETROMINO_BLOCK_SIZE;
 
                 displayBlockToTexture(rect, filledBlocks[i][j].r, filledBlocks[i][j].g, filledBlocks[i][j].b, boardTexture, false);
+            }
+        }
+    }
+    for (int y = 0; y < 4; y++) {
+        for (int x = 0; x < 4; x++) {
+            if (wireframeTet.blocks[y][x].active) {
+                int posX = wireframeTet.x + x;
+                int posY = wireframeTet.y + y;
+                SDL_FRect Brect = {
+                    posX * TETROMINO_BLOCK_SIZE,
+                    posY * TETROMINO_BLOCK_SIZE,
+                    TETROMINO_BLOCK_SIZE,
+                    TETROMINO_BLOCK_SIZE
+                };
+                displayBlockToTexture(Brect, wireframeTet.r, wireframeTet.g, wireframeTet.b, boardTexture, true);
             }
         }
     }
@@ -766,12 +785,14 @@ void resetGame() {
     firstRun = true;
 }
 
-void runWireframes(tetromino copyTet) {
+void runWireframes(tetromino *copyTet) {
+    wireframeTet = *copyTet;
     while (true) {
-        if (canMove(&copyTet, 0, 1)) {
-            
+        if (canMove(&wireframeTet, 0, 1)) {
+            wireframeTet.y += 1;
         } else {
-
+            buildBoardTexture();
+            break;
         }
     }
 }
@@ -783,6 +804,7 @@ void handleKeyboardInput(SDL_Scancode event) {
             if (canMove(&currentTet, -1, 0)) {
                 startSound(&sfx[MOVELEFT]);
                 currentTet.x -= 1;
+                runWireframes(&currentTet);
             }
             break;
         }
@@ -790,6 +812,7 @@ void handleKeyboardInput(SDL_Scancode event) {
             if (canMove(&currentTet, 1, 0)) {
                 startSound(&sfx[MOVERIGHT]);
                 currentTet.x += 1;
+                runWireframes(&currentTet);
             }
             break;
         }
@@ -797,23 +820,24 @@ void handleKeyboardInput(SDL_Scancode event) {
             if (canMove(&currentTet, 0, 1)) {
                 currentTet.y += 1;
             } else {
-                // The block can’t move down anymore → it has landed
                 falling = false;
-                // Copy its active cells into filledBlocks
             }
             break;
         }
         case SDL_SCANCODE_D: {
             rotateTetrominoCW(&currentTet);
+            runWireframes(&currentTet);
             break;
         }
         case SDL_SCANCODE_A: {
             rotateTetrominoCCW(&currentTet);
+            runWireframes(&currentTet);
             break;
         }
         case SDL_SCANCODE_R: {
             if (winning) {
                 restartMainTheme();
+                runWireframes(&currentTet);
                 resetGame();
                 startSound(&sfx[OPEN]);
             }
@@ -842,6 +866,7 @@ void handleKeyboardInput(SDL_Scancode event) {
                 currentTet.x = 4;
                 currentTet.y = 1;
                 updateNextBlocks();
+                runWireframes(&currentTet);
             } else {
                 startSound(&sfx[OPEN]);
                 restartMainTheme();
@@ -986,7 +1011,6 @@ void displayStaticTexture() {
     SDL_RenderTexture(renderer, staticText, NULL, &textRect);
 }
 
-bool toStop = false;
 int posX = 0, posY = 0;
 int currentMove = 0, currentColour = 1;
 char* finalScore = NULL;
@@ -1058,6 +1082,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             updateNextBlocks(); 
             firstRun = false;
             currentTet = tetArray[currentBlock];
+            runWireframes(&currentTet);
         }
         displayText(scoreString, (bWidthMax*TETROMINO_BLOCK_SIZE)+60, (bHeightMin*TETROMINO_BLOCK_SIZE)+49, globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
@@ -1065,20 +1090,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
         if (now - lastFallTime >= 1000) {
             //check if any are above a set block
-            for (int a = 0; a < 4; a++) {
-                for (int b = 0; b < 4; b++) {
-                    posX = currentTet.x+currentTet.blocks[a][b].x;
-                    posY = currentTet.y+currentTet.blocks[a][b].y;
-                    if (filledBlocks[posY+1][posX].v == true && currentTet.blocks[a][b].active == true) {
-                        toStop = true;
-                        break;
-                    }
-                }
-                if (toStop == true) break;
-            }
-            if (toStop == true) {
+            if (canMove(&currentTet, 0, 1)) {
+                currentTet.y += 1;
+            } else {
                 startSound(&sfx[LAND]);
-                toStop = false;
                 falling = false;
                 //set block
                 for (int k = 0; k < 4; k++) {
@@ -1107,6 +1122,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 currentTet.y = 1;
                 
                 updateNextBlocks();
+                runWireframes(&currentTet);
 
                 //check if row filled
                 for (int l = 1; l <= 20; l++) {
@@ -1158,11 +1174,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         break;
                     }
                 }
-            } else {
-                //move down
-                if (toStop == false) {
-                    currentTet.y += 1;
-                }  
             }
 
             lastFallTime = now;
