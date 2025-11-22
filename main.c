@@ -69,6 +69,7 @@ typedef struct {
 } tetromino;
 tetromino tetArray[7];
 tetromino titleTetroes[6];
+tetromino currentTet;
 
 typedef struct {
     int r;
@@ -253,7 +254,7 @@ SDL_Texture *boardTexture;
 SDL_Texture *nextTexture;
 SDL_Surface *icon;
 
-void displayBlock(SDL_FRect rect, int r, int g, int b, bool drawTexture, SDL_Texture* texture) {
+void displayBlock(SDL_FRect rect, int r, int g, int b) {
     int i, j, cX = 0, cY = 0;
     int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
     
@@ -265,9 +266,40 @@ void displayBlock(SDL_FRect rect, int r, int g, int b, bool drawTexture, SDL_Tex
     int bG = SDL_clamp(g-90, 0, 255);
     int bB = SDL_clamp(b-90, 0, 255);
 
-    if (drawTexture) {
-        SDL_SetRenderTarget(renderer, texture);
+    SDL_FRect pixelRect;
+    pixelRect.w = pixelRect.h = 1;
+    for (i = minY; i < maxY; i++) {
+        cY++;
+        for (j = minX; j < maxX; j++) { 
+            cX++;
+            if (i > minY+3 && i < maxY-3 && j > minX+3 && j < maxX-3) {
+                SDL_SetRenderDrawColor(renderer, cR, cG, cB, SDL_ALPHA_OPAQUE); 
+            } else if ((-cX+rect.w) - cY < -1) {
+                SDL_SetRenderDrawColor(renderer, bR, bG, bB, SDL_ALPHA_OPAQUE); 
+            } else {
+                SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
+            }
+            pixelRect.y = i;
+            pixelRect.x = j;
+            SDL_RenderFillRect(renderer, &pixelRect);
+        }
+        cX = 0;
     }
+}
+
+void displayBlockToTexture(SDL_FRect rect, int r, int g, int b, SDL_Texture* texture, bool isWireframe) {
+    int i, j, cX = 0, cY = 0;
+    int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
+    
+    int cR = SDL_clamp(r-45, 0, 255);
+    int cG = SDL_clamp(g-45, 0, 255);
+    int cB = SDL_clamp(b-45, 0, 255);
+
+    int bR = SDL_clamp(r-90, 0, 255);
+    int bG = SDL_clamp(g-90, 0, 255);
+    int bB = SDL_clamp(b-90, 0, 255);
+
+    SDL_SetRenderTarget(renderer, texture);
 
     SDL_FRect pixelRect;
     pixelRect.w = pixelRect.h = 1;
@@ -289,9 +321,7 @@ void displayBlock(SDL_FRect rect, int r, int g, int b, bool drawTexture, SDL_Tex
         cX = 0;
     }
 
-    if (drawTexture) {
-        SDL_SetRenderTarget(renderer, NULL);
-    }
+    SDL_SetRenderTarget(renderer, NULL);
 }
 
 void buildBoardTexture() {
@@ -311,7 +341,7 @@ void buildBoardTexture() {
                 rect.x = j * TETROMINO_BLOCK_SIZE;
                 rect.y = i * TETROMINO_BLOCK_SIZE;
 
-                displayBlock(rect, filledBlocks[i][j].r, filledBlocks[i][j].g, filledBlocks[i][j].b, true, boardTexture);
+                displayBlockToTexture(rect, filledBlocks[i][j].r, filledBlocks[i][j].g, filledBlocks[i][j].b, boardTexture, false);
             }
         }
     }
@@ -352,7 +382,7 @@ void updateNextBlocks() {
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlock(Nrect, tetArray[nextBlocks[block]].r, tetArray[nextBlocks[block]].g, tetArray[nextBlocks[block]].b, true, nextTexture);
+                    displayBlockToTexture(Nrect, tetArray[nextBlocks[block]].r, tetArray[nextBlocks[block]].g, tetArray[nextBlocks[block]].b, nextTexture, false);
                 }
             }
         }
@@ -471,7 +501,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         }
     }
 
-    SDL_SetAppMetadata("Play Tetis!", "0.6.0", "com/LKerr42/SDL-Tetris.github");
+    SDL_SetAppMetadata("Play Tetis!", "1.0.1", "com/LKerr42/SDL-Tetris.github");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -489,15 +519,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         SDL_WINDOW_RESIZABLE,
         &window, &renderer
     );
-
-    icon = IMG_Load("assets/iconT.ico");
-    SDL_SetWindowIcon(window, icon);
-    SDL_DestroySurface(icon);
-
     if (!wind) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
+
+    icon = IMG_Load("assets/iconT.ico");
+    SDL_SetWindowIcon(window, icon);
+    SDL_DestroySurface(icon);
 
     globalFont = TTF_OpenFont("assets\\NES.ttf", 25);
     if (globalFont == NULL) {
@@ -553,8 +582,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     initaliseAudioFile(&mainTheme, "assets/audio/Tetris.wav");
     SDL_SetAudioStreamGain(mainTheme.stream, 0.5f);
     SDL_SetAudioStreamGain(sfx[LAND].stream, 1.5f);
-
-    //initaliseAudioFile(&holyMoly, "assets/audio/switch.wav");
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -733,32 +760,42 @@ void resetGame() {
     score = 0;
     heldtet = -1;
     currentBlock = 0;
-    tetArray[currentBlock].x = 4;
-    tetArray[currentBlock].y = 1;
+    currentTet.x = 4;
+    currentTet.y = 1;
     winning = true;
     firstRun = true;
+}
+
+void runWireframes(tetromino copyTet) {
+    while (true) {
+        if (canMove(&copyTet, 0, 1)) {
+            
+        } else {
+
+        }
+    }
 }
 
 void handleKeyboardInput(SDL_Scancode event) {
     int indx, furth;
     switch (event) {
         case SDL_SCANCODE_LEFT: {
-            if (canMove(&tetArray[currentBlock], -1, 0)) {
+            if (canMove(&currentTet, -1, 0)) {
                 startSound(&sfx[MOVELEFT]);
-                tetArray[currentBlock].x -= 1;
+                currentTet.x -= 1;
             }
             break;
         }
         case SDL_SCANCODE_RIGHT: {
-            if (canMove(&tetArray[currentBlock], 1, 0)) {
+            if (canMove(&currentTet, 1, 0)) {
                 startSound(&sfx[MOVERIGHT]);
-                tetArray[currentBlock].x += 1;
+                currentTet.x += 1;
             }
             break;
         }
         case SDL_SCANCODE_DOWN: {
-            if (canMove(&tetArray[currentBlock], 0, 1)) {
-                tetArray[currentBlock].y += 1;
+            if (canMove(&currentTet, 0, 1)) {
+                currentTet.y += 1;
             } else {
                 // The block can’t move down anymore → it has landed
                 falling = false;
@@ -767,11 +804,11 @@ void handleKeyboardInput(SDL_Scancode event) {
             break;
         }
         case SDL_SCANCODE_D: {
-            rotateTetrominoCW(&tetArray[currentBlock]);
+            rotateTetrominoCW(&currentTet);
             break;
         }
         case SDL_SCANCODE_A: {
-            rotateTetrominoCCW(&tetArray[currentBlock]);
+            rotateTetrominoCCW(&currentTet);
             break;
         }
         case SDL_SCANCODE_R: {
@@ -801,8 +838,9 @@ void handleKeyboardInput(SDL_Scancode event) {
                     }
                     nextBlocks[3] = (int)SDL_rand(7); 
                 }
-                tetArray[currentBlock].x = 4;
-                tetArray[currentBlock].y = 1;
+                currentTet = tetArray[currentBlock];
+                currentTet.x = 4;
+                currentTet.y = 1;
                 updateNextBlocks();
             } else {
                 startSound(&sfx[OPEN]);
@@ -1006,7 +1044,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Trect, titleTetroes[countB].r, titleTetroes[countB].g, titleTetroes[countB].b, false, NULL);
+                        displayBlock(Trect, titleTetroes[countB].r, titleTetroes[countB].g, titleTetroes[countB].b);
                     }
                 }
             }
@@ -1019,6 +1057,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         if (firstRun == true) {
             updateNextBlocks(); 
             firstRun = false;
+            currentTet = tetArray[currentBlock];
         }
         displayText(scoreString, (bWidthMax*TETROMINO_BLOCK_SIZE)+60, (bHeightMin*TETROMINO_BLOCK_SIZE)+49, globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
@@ -1028,9 +1067,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             //check if any are above a set block
             for (int a = 0; a < 4; a++) {
                 for (int b = 0; b < 4; b++) {
-                    posX = tetArray[currentBlock].x+tetArray[currentBlock].blocks[a][b].x;
-                    posY = tetArray[currentBlock].y+tetArray[currentBlock].blocks[a][b].y;
-                    if (filledBlocks[posY+1][posX].v == true && tetArray[currentBlock].blocks[a][b].active == true) {
+                    posX = currentTet.x+currentTet.blocks[a][b].x;
+                    posY = currentTet.y+currentTet.blocks[a][b].y;
+                    if (filledBlocks[posY+1][posX].v == true && currentTet.blocks[a][b].active == true) {
                         toStop = true;
                         break;
                     }
@@ -1044,14 +1083,14 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 //set block
                 for (int k = 0; k < 4; k++) {
                     for (int l = 0; l < 4; l++) {
-                        if (tetArray[currentBlock].blocks[k][l].active == true) {
-                            posX = tetArray[currentBlock].x+tetArray[currentBlock].blocks[k][l].x;
-                            posY = tetArray[currentBlock].y+tetArray[currentBlock].blocks[k][l].y;
+                        if (currentTet.blocks[k][l].active == true) {
+                            posX = currentTet.x+currentTet.blocks[k][l].x;
+                            posY = currentTet.y+currentTet.blocks[k][l].y;
 
                             filledBlocks[posY][posX].v = true; 
-                            filledBlocks[posY][posX].r = tetArray[currentBlock].blocks[k][l].r; 
-                            filledBlocks[posY][posX].g = tetArray[currentBlock].blocks[k][l].g;
-                            filledBlocks[posY][posX].b = tetArray[currentBlock].blocks[k][l].b;
+                            filledBlocks[posY][posX].r = currentTet.blocks[k][l].r; 
+                            filledBlocks[posY][posX].g = currentTet.blocks[k][l].g;
+                            filledBlocks[posY][posX].b = currentTet.blocks[k][l].b;
                         }
                     }
                 }
@@ -1063,8 +1102,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 }
                 nextBlocks[3] = (int)SDL_rand(7); 
                 falling = true;
-                tetArray[currentBlock].x = 4;
-                tetArray[currentBlock].y = 1;
+                currentTet = tetArray[currentBlock];
+                currentTet.x = 4;
+                currentTet.y = 1;
                 
                 updateNextBlocks();
 
@@ -1121,7 +1161,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             } else {
                 //move down
                 if (toStop == false) {
-                    tetArray[currentBlock].y += 1;
+                    currentTet.y += 1;
                 }  
             }
 
@@ -1135,16 +1175,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         //display falling tetromino
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
-                if (tetArray[currentBlock].blocks[y][x].active) {
-                    posX = tetArray[currentBlock].x + x;
-                    posY = tetArray[currentBlock].y + y;
+                if (currentTet.blocks[y][x].active) {
+                    posX = currentTet.x + x;
+                    posY = currentTet.y + y;
                     SDL_FRect Brect = {
                         (posX + bWidthMin) * TETROMINO_BLOCK_SIZE,
                         (posY + bHeightMin) * TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlock(Brect, tetArray[currentBlock].r, tetArray[currentBlock].g, tetArray[currentBlock].b, false, NULL);
+                    displayBlock(Brect, currentTet.r, currentTet.g, currentTet.b);
                 }
             }
         }
@@ -1163,7 +1203,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Hrect, tetArray[heldtet].r, tetArray[heldtet].g, tetArray[heldtet].b, false, NULL);
+                        displayBlock(Hrect, tetArray[heldtet].r, tetArray[heldtet].g, tetArray[heldtet].b);
                     }
                 }
             } 
@@ -1189,6 +1229,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     SDL_DestroyTexture(boardTexture);
     SDL_DestroyTexture(staticText);
     TTF_CloseFont(globalFont);
+    TTF_CloseFont(globalFontS);
     TTF_Quit();
     for (int i = 0; i < SDL_arraysize(sfx); i++) {
         if (sfx[i].stream) {
