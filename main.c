@@ -34,7 +34,7 @@ float textW, textH;
 
 int nextBlocks[4];
 
-bool falling = true, winning = false, titleCard = true, firstRun = true;
+bool winning = false, keyboardCard = false, titleCard = true, firstRun = true;
 char scoreString[7] = "0000000";
 
 TTF_Font* globalFont;
@@ -254,6 +254,10 @@ void setupTitleBlocks() {
 SDL_Texture *boardTexture;
 SDL_Texture *nextTexture;
 SDL_Surface *icon;
+
+SDL_Texture *keyboard;
+SDL_Surface *keyboardSurface;
+SDL_FRect keyRect;
 
 void displayBlock(SDL_FRect rect, int r, int g, int b) {
     int i, j, cX = 0, cY = 0;
@@ -490,8 +494,11 @@ char fileNames[9][16] = {
     "switch"
 };
 
+float keyW, keyH;
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
+    // -- setup --
     bWidthMin = ((width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
     bWidthMax = ((width / TETROMINO_BLOCK_SIZE) >> 1) + 5;
 
@@ -509,6 +516,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     setColourDef(&colour[5], 255, 0, 0); //red
     setColourDef(&colour[6], 150, 0, 255); //purple
 
+    // -- border -- 
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
             if (i == 0 || i == 21 || j == 0 || j == 11) {
@@ -520,6 +528,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         }
     }
 
+    // -- init --
     SDL_SetAppMetadata("Play Tetis!", "1.0.1", "com/LKerr42/SDL-Tetris.github");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -532,6 +541,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
+    // -- window --
     bool wind = SDL_CreateWindowAndRenderer(
         "Play Tetris!", 
         width, height, 
@@ -543,10 +553,30 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
+    // -- icon --
     icon = IMG_Load("assets/iconT.ico");
     SDL_SetWindowIcon(window, icon);
     SDL_DestroySurface(icon);
 
+    // -- keyboard image --
+    keyboardSurface = IMG_Load("assets/keyboard.png");
+    if (keyboardSurface == NULL) {
+        SDL_Log("Failed to load keyboardSurface: %s", SDL_GetError());
+    }
+    keyboard = SDL_CreateTextureFromSurface(renderer, keyboardSurface);
+    if (keyboard == NULL) {
+        SDL_Log("Failed to load keyboard: %s", SDL_GetError());
+    }
+
+    SDL_GetTextureSize(keyboard, &keyW, &keyH);
+
+    int keyX = (width >> 1) - (keyW/2);
+    int keyY = (height >> 1) - (keyH/2);
+
+    SDL_FRect temp = {keyX, keyY, keyW, keyH};
+    keyRect = temp;
+
+    // -- fonts -- 
     globalFont = TTF_OpenFont("assets\\NES.ttf", 25);
     if (globalFont == NULL) {
         SDL_Log("Failed to load font globalFont: %s", SDL_GetError());
@@ -559,6 +589,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     setupStaticText();
 
+    // -- texture setup --
     boardTexture = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_RGBA32,
@@ -583,12 +614,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
     }
 
+    // -- next blocks -- 
     for (int k = 0; k < 4; k++) {
         nextBlocks[k] = SDL_rand(7);
     }
 
     updateNextBlocks();
 
+    // -- audio --
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         SDL_Log("SDL_Init AUDIO failed: %s", SDL_GetError());
     }
@@ -819,8 +852,6 @@ void handleKeyboardInput(SDL_Scancode event) {
         case SDL_SCANCODE_DOWN: {
             if (canMove(&currentTet, 0, 1)) {
                 currentTet.y += 1;
-            } else {
-                falling = false;
             }
             break;
         }
@@ -848,7 +879,19 @@ void handleKeyboardInput(SDL_Scancode event) {
             break;
         }
         case SDL_SCANCODE_SPACE: {
-            if (winning) {
+            if (titleCard) {
+                restartMainTheme();
+                startSound(&sfx[OPEN]);
+                titleCard = false;
+                keyboardCard = true;
+                break;
+            } else if (keyboardCard) {
+                restartMainTheme();
+                startSound(&sfx[OPEN]);
+                keyboardCard = false;
+                winning = true;
+                break;
+            } else if (winning) {
                 startSound(&sfx[SWITCH]);
                 //swap values
                 int temp = heldtet;
@@ -867,17 +910,12 @@ void handleKeyboardInput(SDL_Scancode event) {
                 currentTet.y = 1;
                 updateNextBlocks();
                 runWireframes(&currentTet);
+                break;
             } else {
                 startSound(&sfx[OPEN]);
                 restartMainTheme();
                 resetGame();
-            }
-
-            if (titleCard) {
-                restartMainTheme();
-                startSound(&sfx[OPEN]);
-                titleCard = false;
-                winning = true;
+                break;
             }
             break;
         }
@@ -903,6 +941,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             bHeightMin = ((height / TETROMINO_BLOCK_SIZE) >> 1) - 10;
             bHeightMax = ((height / TETROMINO_BLOCK_SIZE) >> 1) + 10;
             setupStaticText();
+
+            keyRect.x = (width >> 1) - (keyW/2);
+            keyRect.y = (height >> 1) - (keyH/2);
             break;
         }
     }
@@ -1073,9 +1114,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 }
             }
         }
-    }
-
-    if (winning) {
+    } else if (keyboardCard) {
+        SDL_RenderTexture(renderer, keyboard, NULL, &keyRect);
+    } else if (winning) {
         displayStaticTexture();
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
         if (firstRun == true) {
@@ -1094,7 +1135,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 currentTet.y += 1;
             } else {
                 startSound(&sfx[LAND]);
-                falling = false;
                 //set block
                 for (int k = 0; k < 4; k++) {
                     for (int l = 0; l < 4; l++) {
@@ -1116,13 +1156,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     nextBlocks[n] = nextBlocks[n+1];
                 }
                 nextBlocks[3] = (int)SDL_rand(7); 
-                falling = true;
                 currentTet = tetArray[currentBlock];
                 currentTet.x = 4;
                 currentTet.y = 1;
                 
                 updateNextBlocks();
-                runWireframes(&currentTet);
 
                 //check if row filled
                 for (int l = 1; l <= 20; l++) {
@@ -1137,6 +1175,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         linesCleared++;
                     }
                 }
+
+                runWireframes(&currentTet);
 
                 //update score
                 if (linesCleared > 0) {
