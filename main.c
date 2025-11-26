@@ -13,11 +13,13 @@
 #define HOLYMOLY  1
 #define LAND      2
 #define MOVELEFT  3
-#define MOVERIGHT 4 
+#define MOVERIGHT 4
 #define OPEN      5
 #define SPINCCW   6
 #define SPINCW    7
 #define SWITCH    8
+
+#define arrow(X) ((X) ? ('^') : ('v'))
 
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
@@ -35,6 +37,7 @@ float textW, textH;
 int nextBlocks[4];
 
 bool winning = false, keyboardCard = false, titleCard = true, firstRun = true;
+bool showWireframe = true;
 char scoreString[7] = "0000000";
 
 TTF_Font* globalFont;
@@ -353,18 +356,20 @@ void buildBoardTexture() {
             }
         }
     }
-    for (int y = 0; y < 4; y++) {
-        for (int x = 0; x < 4; x++) {
-            if (wireframeTet.blocks[y][x].active) {
-                int posX = wireframeTet.x + x;
-                int posY = wireframeTet.y + y;
-                SDL_FRect Brect = {
-                    posX * TETROMINO_BLOCK_SIZE,
-                    posY * TETROMINO_BLOCK_SIZE,
-                    TETROMINO_BLOCK_SIZE,
-                    TETROMINO_BLOCK_SIZE
-                };
-                displayBlockToTexture(Brect, wireframeTet.r, wireframeTet.g, wireframeTet.b, boardTexture, true);
+    if (showWireframe) {
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                if (wireframeTet.blocks[y][x].active) {
+                    int posX = wireframeTet.x + x;
+                    int posY = wireframeTet.y + y;
+                    SDL_FRect Brect = {
+                        posX * TETROMINO_BLOCK_SIZE,
+                        posY * TETROMINO_BLOCK_SIZE,
+                        TETROMINO_BLOCK_SIZE,
+                        TETROMINO_BLOCK_SIZE
+                    };
+                    displayBlockToTexture(Brect, wireframeTet.r, wireframeTet.g, wireframeTet.b, boardTexture, true);
+                }
             }
         }
     }
@@ -819,20 +824,21 @@ void resetGame() {
 }
 
 void runWireframes(tetromino *copyTet) {
-    wireframeTet = *copyTet;
-    while (true) {
-        if (canMove(&wireframeTet, 0, 1)) {
-            wireframeTet.y += 1;
-        } else {
-            buildBoardTexture();
-            break;
+    if (showWireframe) {
+        wireframeTet = *copyTet;
+        while (true) {
+            if (canMove(&wireframeTet, 0, 1)) {
+                wireframeTet.y += 1;
+            } else {
+                buildBoardTexture();
+                break;
+            }
         }
     }
 }
 
-void handleKeyboardInput(SDL_Scancode event) {
-    int indx, furth;
-    switch (event) {
+void handleKeyboardInput(SDL_Scancode code) {
+    switch (code) {
         case SDL_SCANCODE_LEFT: {
             if (canMove(&currentTet, -1, 0)) {
                 startSound(&sfx[MOVELEFT]);
@@ -919,6 +925,155 @@ void handleKeyboardInput(SDL_Scancode event) {
             }
             break;
         }
+        case SDL_SCANCODE_LALT: {
+            showWireframe = !showWireframe;
+            runWireframes(&currentTet);
+            buildBoardTexture();
+            break;
+        }
+        case SDL_SCANCODE_RALT: {
+            showWireframe = !showWireframe;
+            runWireframes(&currentTet);
+            buildBoardTexture();
+            break;
+        }
+    }
+}
+
+void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
+    switch (code) {
+        // -- letters --
+        case SDL_SCANCODE_A: {}
+        case SDL_SCANCODE_B: {}
+        case SDL_SCANCODE_C: {}
+        case SDL_SCANCODE_D: {}
+        case SDL_SCANCODE_E: {}
+        case SDL_SCANCODE_F: {}
+        case SDL_SCANCODE_G: {}
+        case SDL_SCANCODE_H: {}
+        case SDL_SCANCODE_I: {}
+        case SDL_SCANCODE_J: {}
+        case SDL_SCANCODE_K: {}
+        case SDL_SCANCODE_L: {}
+        case SDL_SCANCODE_M: {}
+        case SDL_SCANCODE_N: {}
+        case SDL_SCANCODE_O: {}
+        case SDL_SCANCODE_P: {}
+        case SDL_SCANCODE_Q: {}
+        case SDL_SCANCODE_R: {}
+        case SDL_SCANCODE_S: {}
+        case SDL_SCANCODE_T: {}
+        case SDL_SCANCODE_U: {}
+        case SDL_SCANCODE_V: {}
+        case SDL_SCANCODE_W: {}
+        case SDL_SCANCODE_X: {}
+        case SDL_SCANCODE_Y: {}
+        case SDL_SCANCODE_Z: {}
+
+        // -- numbers --
+        case SDL_SCANCODE_0: {
+            printf("0  %c\n", arrow(pressing));
+            break;
+        }
+        case SDL_SCANCODE_1: {}
+        case SDL_SCANCODE_2: {}
+        case SDL_SCANCODE_3: {}
+        case SDL_SCANCODE_4: {}
+        case SDL_SCANCODE_5: {}
+        case SDL_SCANCODE_6: {}
+        case SDL_SCANCODE_7: {}
+        case SDL_SCANCODE_8: {}
+        case SDL_SCANCODE_9: {}
+
+        // -- top row --
+        case SDL_SCANCODE_ESCAPE: {}
+        case SDL_SCANCODE_F1: {}
+        case SDL_SCANCODE_F2: {}
+        case SDL_SCANCODE_F3: {}
+        case SDL_SCANCODE_F4: {}
+        case SDL_SCANCODE_F5: {}
+        case SDL_SCANCODE_F6: {}
+        case SDL_SCANCODE_F7: {}
+        case SDL_SCANCODE_F8: {}
+        case SDL_SCANCODE_F9: {}
+        case SDL_SCANCODE_F10: {}
+        case SDL_SCANCODE_F11: {}
+        case SDL_SCANCODE_F12: {}
+        case SDL_SCANCODE_DELETE: {}
+
+        // --  bottom row --
+        case SDL_SCANCODE_LCTRL: {}
+        case SDL_SCANCODE_LGUI: {}
+        case SDL_SCANCODE_LALT: {}
+        case SDL_SCANCODE_SPACE: {}
+        case SDL_SCANCODE_RALT: {}
+        case SDL_SCANCODE_APPLICATION: {}
+        case SDL_SCANCODE_LEFT: {}
+        case SDL_SCANCODE_UP: {}
+        case SDL_SCANCODE_DOWN: {}
+        case SDL_SCANCODE_RIGHT: {}
+
+        // -- left side --
+        case SDL_SCANCODE_GRAVE: {}
+        case SDL_SCANCODE_TAB: {}
+        case SDL_SCANCODE_CAPSLOCK: {}
+        case SDL_SCANCODE_LSHIFT: {}
+
+        // -- right side --
+        case SDL_SCANCODE_MINUS: {
+            printf("-  ");
+            break;
+        }
+        case SDL_SCANCODE_EQUALS: {
+            printf("=  ");
+            break;
+        }
+        case SDL_SCANCODE_BACKSPACE: {
+            printf("<-  ");
+            break;
+        }
+
+        case SDL_SCANCODE_LEFTBRACKET: {
+            printf("[  ");
+            break;
+        }
+        case SDL_SCANCODE_RIGHTBRACKET: {
+            printf("]  ");
+            break;
+        }
+        case SDL_SCANCODE_BACKSLASH: {
+            printf("|  ");
+            break;
+        }
+
+        case SDL_SCANCODE_SEMICOLON: {
+            printf(";  ");
+            break;
+        }
+        case SDL_SCANCODE_APOSTROPHE: {
+            printf("'  ");
+            break;
+        }
+        case SDL_SCANCODE_RETURN: {
+            printf("\n");
+        }
+    
+        case SDL_SCANCODE_COMMA: {
+            printf(",  ");
+            break;
+        }
+        case SDL_SCANCODE_PERIOD: {
+            printf(".  ");
+            break;
+        }
+        case SDL_SCANCODE_SLASH: {
+            printf("/  ");
+            break;
+        }
+        case SDL_SCANCODE_RSHIFT: {
+            printf("rs  ");
+            break;
+        }
     }
 }
 
@@ -930,8 +1085,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             break;
         }
         case SDL_EVENT_KEY_DOWN: {
-            handleKeyboardInput(event->key.scancode);
+            if (keyboardCard) {
+                printf("key: %d  ", event->key.scancode);
+                handleInputKeyboardCard(event->key.scancode, true);
+            } else {
+                handleKeyboardInput(event->key.scancode);
+            }
             break;
+        }
+        case SDL_EVENT_KEY_UP: {
+            if (keyboardCard) {
+                handleInputKeyboardCard(event->key.scancode, false);
+            } 
         }
         case SDL_EVENT_WINDOW_RESIZED: {
             SDL_GetWindowSize(window, &width, &height);
@@ -1057,8 +1222,6 @@ int currentMove = 0, currentColour = 1;
 char* finalScore = NULL;
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
-    SDL_FRect rects[20];
-
     Uint64 now = SDL_GetTicks();
     static Uint64 lastFallTime = 0, lastChange = 0;
 
@@ -1116,7 +1279,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         }
     } else if (keyboardCard) {
         SDL_RenderTexture(renderer, keyboard, NULL, &keyRect);
-    } else if (winning) {
+    } else if (winning) { //TODO: add turning on/off for wireframes
         displayStaticTexture();
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
         if (firstRun == true) {
@@ -1279,6 +1442,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     /* SDL will clean up the window/renderer for us. */
     SDL_DestroyTexture(boardTexture);
     SDL_DestroyTexture(staticText);
+    SDL_DestroyTexture(keyboard);
     TTF_CloseFont(globalFont);
     TTF_CloseFont(globalFontS);
     TTF_Quit();
