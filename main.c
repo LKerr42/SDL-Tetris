@@ -9,6 +9,7 @@
 #include <string.h> 
 
 #define TETROMINO_BLOCK_SIZE 20
+#define KEYBOARD_PIXEL_SIZE 9
 #define CLEAR     0
 #define HOLYMOLY  1
 #define LAND      2
@@ -261,6 +262,8 @@ SDL_Surface *icon;
 SDL_Texture *keyboard;
 SDL_Surface *keyboardSurface;
 SDL_FRect keyRect;
+
+SDL_Texture *backgroundKeyboard;
 
 void displayBlock(SDL_FRect rect, int r, int g, int b) {
     int i, j, cX = 0, cY = 0;
@@ -619,6 +622,16 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
     }
 
+    backgroundKeyboard  = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        keyW, keyH
+    );
+    if (!backgroundKeyboard) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
     // -- next blocks -- 
     for (int k = 0; k < 4; k++) {
         nextBlocks[k] = SDL_rand(7);
@@ -837,6 +850,30 @@ void runWireframes(tetromino *copyTet) {
     }
 }
 
+void addKeyboardRects(int x, int y, int w, int h, bool down) {
+    SDL_SetRenderTarget(renderer, backgroundKeyboard);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    SDL_FRect rect = {
+        x * KEYBOARD_PIXEL_SIZE,
+        y * KEYBOARD_PIXEL_SIZE, //x and y
+        w * KEYBOARD_PIXEL_SIZE,
+        h * KEYBOARD_PIXEL_SIZE, //w and h
+    };
+
+    if (down) {
+        SDL_SetRenderDrawColor(renderer, 242, 68, 56, SDL_ALPHA_OPAQUE); 
+    } else {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE); 
+    }
+
+    SDL_RenderFillRect(renderer, &rect);
+
+    SDL_SetRenderTarget(renderer, NULL);
+}
+
 void handleKeyboardInput(SDL_Scancode code) {
     switch (code) {
         case SDL_SCANCODE_LEFT: {
@@ -972,10 +1009,12 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
 
         // -- numbers --
         case SDL_SCANCODE_0: {
-            printf("0  %c\n", arrow(pressing));
+            //printf("0  %c\n", arrow(pressing));
             break;
         }
-        case SDL_SCANCODE_1: {}
+        case SDL_SCANCODE_1: {
+            break;
+        }
         case SDL_SCANCODE_2: {}
         case SDL_SCANCODE_3: {}
         case SDL_SCANCODE_4: {}
@@ -986,7 +1025,10 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
         case SDL_SCANCODE_9: {}
 
         // -- top row --
-        case SDL_SCANCODE_ESCAPE: {}
+        case SDL_SCANCODE_ESCAPE: {
+            addKeyboardRects(1, 1, 6, 3, pressing);
+            break;
+        }
         case SDL_SCANCODE_F1: {}
         case SDL_SCANCODE_F2: {}
         case SDL_SCANCODE_F3: {}
@@ -1004,8 +1046,18 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
         // --  bottom row --
         case SDL_SCANCODE_LCTRL: {}
         case SDL_SCANCODE_LGUI: {}
-        case SDL_SCANCODE_LALT: {}
-        case SDL_SCANCODE_SPACE: {}
+        case SDL_SCANCODE_LALT: {
+            break;
+        }
+        case SDL_SCANCODE_SPACE: {
+            if (pressing) {
+                restartMainTheme();
+                startSound(&sfx[OPEN]);
+                keyboardCard = false;
+                winning = true;
+            }
+            break;
+        }
         case SDL_SCANCODE_RALT: {}
         case SDL_SCANCODE_APPLICATION: {}
         case SDL_SCANCODE_LEFT: {}
@@ -1021,57 +1073,44 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
 
         // -- right side --
         case SDL_SCANCODE_MINUS: {
-            printf("-  ");
             break;
         }
         case SDL_SCANCODE_EQUALS: {
-            printf("=  ");
             break;
         }
         case SDL_SCANCODE_BACKSPACE: {
-            printf("<-  ");
             break;
         }
 
         case SDL_SCANCODE_LEFTBRACKET: {
-            printf("[  ");
             break;
         }
         case SDL_SCANCODE_RIGHTBRACKET: {
-            printf("]  ");
             break;
         }
         case SDL_SCANCODE_BACKSLASH: {
-            printf("|  ");
             break;
         }
 
         case SDL_SCANCODE_SEMICOLON: {
-            printf(";  ");
             break;
         }
         case SDL_SCANCODE_APOSTROPHE: {
-            printf("'  ");
             break;
         }
         case SDL_SCANCODE_RETURN: {
-            printf("\n");
         }
     
         case SDL_SCANCODE_COMMA: {
-            printf(",  ");
             break;
         }
         case SDL_SCANCODE_PERIOD: {
-            printf(".  ");
             break;
         }
         case SDL_SCANCODE_SLASH: {
-            printf("/  ");
             break;
         }
         case SDL_SCANCODE_RSHIFT: {
-            printf("rs  ");
             break;
         }
     }
@@ -1086,7 +1125,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         }
         case SDL_EVENT_KEY_DOWN: {
             if (keyboardCard) {
-                printf("key: %d  ", event->key.scancode);
                 handleInputKeyboardCard(event->key.scancode, true);
             } else {
                 handleKeyboardInput(event->key.scancode);
@@ -1220,6 +1258,11 @@ void displayStaticTexture() {
 int posX = 0, posY = 0;
 int currentMove = 0, currentColour = 1;
 char* finalScore = NULL;
+
+SDL_FRect tempkeyrect = {
+    0, 0,
+    1000, 500
+};
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 now = SDL_GetTicks();
@@ -1278,8 +1321,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
     } else if (keyboardCard) {
+        SDL_RenderTexture(renderer, backgroundKeyboard, NULL, &keyRect);
         SDL_RenderTexture(renderer, keyboard, NULL, &keyRect);
-    } else if (winning) { //TODO: add turning on/off for wireframes
+    } else if (winning) { 
         displayStaticTexture();
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
         if (firstRun == true) {
