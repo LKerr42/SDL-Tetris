@@ -853,9 +853,6 @@ void runWireframes(tetromino *copyTet) {
 void addKeyboardRects(int x, int y, int w, int h, bool down) {
     SDL_SetRenderTarget(renderer, backgroundKeyboard);
 
-    /*SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);*/
-
     SDL_FRect rect = {
         x * KEYBOARD_PIXEL_SIZE,
         y * KEYBOARD_PIXEL_SIZE, //x and y
@@ -864,7 +861,7 @@ void addKeyboardRects(int x, int y, int w, int h, bool down) {
     };
 
     if (down) {
-        SDL_SetRenderDrawColor(renderer, 242, 68, 56, SDL_ALPHA_OPAQUE); 
+        SDL_SetRenderDrawColor(renderer, 255, 53, 38, SDL_ALPHA_OPAQUE); 
     } else {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE); 
     }
@@ -873,6 +870,8 @@ void addKeyboardRects(int x, int y, int w, int h, bool down) {
 
     SDL_SetRenderTarget(renderer, NULL);
 }
+
+Uint8 amountPressedDown = 0;
 
 void handleKeyboardInput(SDL_Scancode code) {
     switch (code) {
@@ -982,32 +981,110 @@ Uint8 amountPressed = 0;
 void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
     switch (code) {
         // -- letters --
-        case SDL_SCANCODE_A: {}
-        case SDL_SCANCODE_B: {}
-        case SDL_SCANCODE_C: {}
-        case SDL_SCANCODE_D: {}
-        case SDL_SCANCODE_E: {}
-        case SDL_SCANCODE_F: {}
-        case SDL_SCANCODE_G: {}
-        case SDL_SCANCODE_H: {}
-        case SDL_SCANCODE_I: {}
-        case SDL_SCANCODE_J: {}
-        case SDL_SCANCODE_K: {}
-        case SDL_SCANCODE_L: {}
-        case SDL_SCANCODE_M: {}
-        case SDL_SCANCODE_N: {}
-        case SDL_SCANCODE_O: {}
-        case SDL_SCANCODE_P: {}
-        case SDL_SCANCODE_Q: {}
-        case SDL_SCANCODE_R: {}
-        case SDL_SCANCODE_S: {}
-        case SDL_SCANCODE_T: {}
-        case SDL_SCANCODE_U: {}
-        case SDL_SCANCODE_V: {}
-        case SDL_SCANCODE_W: {}
-        case SDL_SCANCODE_X: {}
-        case SDL_SCANCODE_Y: {}
+        case SDL_SCANCODE_Q: {
+            addKeyboardRects(7, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_W: {
+            addKeyboardRects(13, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_E: {
+            addKeyboardRects(19, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_R: {
+            addKeyboardRects(25, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_T: {
+            addKeyboardRects(31, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_Y: {
+            addKeyboardRects(37, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_U: {
+            addKeyboardRects(43, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_I: {
+            addKeyboardRects(49, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_O: {
+            addKeyboardRects(55, 9, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_P: {
+            addKeyboardRects(61, 9, 5, 7, pressing);
+            break;
+        }
+
+        case SDL_SCANCODE_A: {
+            addKeyboardRects(9, 15, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_S: {
+            addKeyboardRects(15, 15, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_D: {
+            addKeyboardRects(21, 15, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_F: {
+            addKeyboardRects(27, 15, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_G: {
+            addKeyboardRects(33, 15, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_H: {
+            addKeyboardRects(39, 15, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_J: {
+            addKeyboardRects(45, 15, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_K: {
+            addKeyboardRects(51, 15, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_L: {
+            addKeyboardRects(57, 15, 5, 7, pressing);
+            break;
+        }
+
         case SDL_SCANCODE_Z: {
+            addKeyboardRects(12, 21, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_X: {
+            addKeyboardRects(18, 21, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_C: {
+            addKeyboardRects(24, 21, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_V: {
+            addKeyboardRects(30, 21, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_B: {
+            addKeyboardRects(36, 21, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_N: {
+            addKeyboardRects(42, 21, 5, 7, pressing);
+            break;
+        }
+        case SDL_SCANCODE_M: {
+            addKeyboardRects(48, 21, 5, 7, pressing);
             break;
         }
 
@@ -1052,6 +1129,7 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
             addKeyboardRects(59, 3, 5, 7, pressing);
             break;
         }
+        
         // -- top row --
         case SDL_SCANCODE_ESCAPE: {
             addKeyboardRects(1, 1, 6, 3, pressing);
@@ -1254,6 +1332,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             if (keyboardCard) {
                 handleInputKeyboardCard(event->key.scancode, false);
             } 
+            if (event->key.scancode == SDL_SCANCODE_DOWN) {
+                amountPressedDown++;
+            }
         }
         case SDL_EVENT_WINDOW_RESIZED: {
             SDL_GetWindowSize(window, &width, &height);
@@ -1381,7 +1462,7 @@ char* finalScore = NULL;
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 now = SDL_GetTicks();
-    static Uint64 lastFallTime = 0, lastChange = 0, lastPress = 0;
+    static Uint64 lastFallTime = 0, lastChange = 0, lastPress = 0, lastPressDown = 0;
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
@@ -1464,6 +1545,25 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         displayText(scoreString, (bWidthMax*TETROMINO_BLOCK_SIZE)+60, (bHeightMin*TETROMINO_BLOCK_SIZE)+49, globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
         char incompleteScore[7];
+
+        if (amountPressedDown == 1) {
+            lastPressDown++;
+        } else if (amountPressedDown == 2) {
+            while (true) {
+                if (canMove(&currentTet, 0, 1)) {
+                    currentTet.y += 1;
+                } else {
+                    break;
+                }
+            }
+            amountPressedDown = 0;
+            lastPressDown = 0;
+        }
+
+        if (lastPressDown >= 400) {
+            amountPressedDown = 0;
+            lastPressDown = 0;
+        }
 
         if (now - lastFallTime >= 1000) {
             //check if any are above a set block
