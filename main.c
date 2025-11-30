@@ -262,6 +262,8 @@ SDL_Surface *keyboardSurface;
 SDL_FRect keyRect;
 
 SDL_Texture *backgroundKeyboard;
+SDL_Texture *keyboardText;
+SDL_FRect keyboardTextRect;
 
 void displayBlock(SDL_FRect rect, int r, int g, int b) {
     int i, j, cX = 0, cY = 0;
@@ -501,6 +503,7 @@ char fileNames[9][16] = {
 };
 
 float keyW, keyH;
+int halfTitleWidth, halfTitleHeight;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
@@ -510,6 +513,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     bHeightMin = ((height / TETROMINO_BLOCK_SIZE) >> 1) - 10;
     bHeightMax = ((height / TETROMINO_BLOCK_SIZE) >> 1) + 10;
+
+    halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
+    halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
 
     setupTetrominos();
     setupTitleBlocks();
@@ -631,6 +637,26 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     if (!backgroundKeyboard) {
         printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
     }
+
+    keyboardText  = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        intKeyW, 100
+    );
+    if (!backgroundKeyboard) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
+    SDL_FRect temp2 = {keyX, keyY+intKeyH+5, intKeyW, 100};
+    keyboardTextRect = temp2;
+
+    SDL_SetRenderTarget(renderer, keyboardText);
+
+    SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderTarget(renderer, NULL);
 
     // -- next blocks -- 
     for (int k = 0; k < 4; k++) {
@@ -977,6 +1003,18 @@ void handleKeyboardInput(SDL_Scancode code) {
 }
 
 Uint8 amountPressed = 0;
+
+void writeToKeyboardText(char string[], bool write) {
+    SDL_SetRenderTarget(renderer, keyboardText);
+
+    if (!write) {
+        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+        SDL_RenderClear(renderer);
+    } else {
+        //create surface from string and draw it to the main texture at the centre Y
+    }
+    SDL_SetRenderTarget(renderer, NULL);
+}
 
 void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
     switch (code) {
@@ -1347,6 +1385,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
             keyRect.x = (width >> 1) - ((int)keyW/2);
             keyRect.y = (height >> 1) - ((int)keyH/2) - 5;
+
+            halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
+            halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
             break;
         }
     }
@@ -1474,9 +1515,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     }
     playWAV(&mainTheme, true);
 
-    int halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
-    int halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
-
     if (titleCard) {
         //change through colours
         if (now - lastChange >= 500) {
@@ -1517,6 +1555,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
     } else if (keyboardCard) {
+        SDL_RenderTexture(renderer, keyboardText, NULL, &keyboardTextRect);
         SDL_RenderTexture(renderer, backgroundKeyboard, NULL, &keyRect);
         SDL_RenderTexture(renderer, keyboard, NULL, &keyRect);
         if (amountPressed == 1) {
@@ -1716,6 +1755,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     SDL_DestroyTexture(boardTexture);
     SDL_DestroyTexture(staticText);
     SDL_DestroyTexture(keyboard);
+    SDL_DestroyTexture(keyboardText);
     TTF_CloseFont(globalFont);
     TTF_CloseFont(globalFontS);
     TTF_Quit();
