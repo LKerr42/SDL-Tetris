@@ -92,6 +92,11 @@ typedef struct {
 sound sfx[9];
 sound mainTheme;
 
+typedef struct {
+    SDL_Texture *tex;
+    SDL_FRect dest;
+} textTexture;
+
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
 void setupStaticText();
@@ -653,7 +658,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     SDL_SetRenderTarget(renderer, keyboardText);
 
-    SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 130, 255);
     SDL_RenderClear(renderer);
 
     SDL_SetRenderTarget(renderer, NULL);
@@ -1004,15 +1009,45 @@ void handleKeyboardInput(SDL_Scancode code) {
 
 Uint8 amountPressed = 0;
 
-void writeToKeyboardText(char string[], bool write) {
-    SDL_SetRenderTarget(renderer, keyboardText);
+textTexture textArray[300];
 
-    if (!write) {
-        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
-        SDL_RenderClear(renderer);
-    } else {
+void writeToKeyboardText(char string[], bool write, SDL_Scancode scancode) {
+    SDL_SetRenderTarget(renderer, keyboardText);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 130, 255);
+    SDL_RenderClear(renderer);
+
+    if (write) {
         //create surface from string and draw it to the main texture at the centre Y
+        if (textArray[scancode].tex == NULL) {
+            SDL_Color textColor = {255, 255, 255, 255};
+            SDL_Surface *textSurface = TTF_RenderText_Blended(globalFont, string, strlen(string), textColor);
+            if (!textSurface) {
+                SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
+                SDL_SetRenderTarget(renderer, NULL);
+                return;
+            }
+            
+            textArray[scancode].dest.w = textSurface->w;
+            textArray[scancode].dest.h = textSurface->h;
+            textArray[scancode].dest.x = (840 - textArray[scancode].dest.w) / 2;
+            textArray[scancode].dest.y = 0;
+            
+            textArray[scancode].tex = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+            if (!textArray[scancode].tex) {
+                SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+                SDL_SetRenderTarget(renderer, NULL);
+                return;
+            }
+
+            SDL_RenderTexture(renderer, textArray[scancode].tex, NULL, &textArray[scancode].dest);
+            SDL_DestroySurface(textSurface);     
+        } else {
+            SDL_RenderTexture(renderer, textArray[scancode].tex, NULL, &textArray[scancode].dest);
+        }
+
     }
+
     SDL_SetRenderTarget(renderer, NULL);
 }
 
@@ -1127,19 +1162,23 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
         }
 
         // -- numbers --
-        case SDL_SCANCODE_1: {
+        case SDL_SCANCODE_1: {  
+            writeToKeyboardText("-1-", pressing, SDL_SCANCODE_1);
             addKeyboardRects(5, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_2: {
+            writeToKeyboardText("-2-", pressing, SDL_SCANCODE_2);
             addKeyboardRects(11, 3, 5, 7, pressing);
             break;  
         }
         case SDL_SCANCODE_3: {
+            writeToKeyboardText("-3-", pressing, SDL_SCANCODE_3);
             addKeyboardRects(17, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_4: {
+            writeToKeyboardText("-4-", pressing, SDL_SCANCODE_4);
             addKeyboardRects(23, 3, 5, 7, pressing);
             break;
         }
@@ -1256,8 +1295,7 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
             break;
         }
         case SDL_SCANCODE_LEFT: {
-            addKeyboardRects(68, 27, 5, 6, pressing);
-            addKeyboardRects(73, 30, 1, 1, pressing);
+            addKeyboardRects(68, 28, 6, 5, pressing);
             break;
         }
         case SDL_SCANCODE_UP: {
@@ -1269,8 +1307,7 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
             break;
         }
         case SDL_SCANCODE_RIGHT: {
-            addKeyboardRects(80, 27, 5, 6, pressing);
-            addKeyboardRects(79, 30, 1, 1, pressing);
+            addKeyboardRects(79, 28, 6, 5, pressing);
             break;
         }
 
@@ -1385,6 +1422,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
             keyRect.x = (width >> 1) - ((int)keyW/2);
             keyRect.y = (height >> 1) - ((int)keyH/2) - 5;
+
+            keyboardTextRect.x = keyRect.x;
+            keyboardTextRect.y = keyRect.y + keyRect.h + 10;
 
             halfTitleWidth = (width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
             halfTitleHeight = ((height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
@@ -1568,7 +1608,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             amountPressed = 0;
         }
 
-        if (lastPress >= 400) {
+        if (lastPress >= 500) {
             amountPressed = 0;
             lastPress = 0;
         }
@@ -1599,7 +1639,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             lastPressDown = 0;
         }
 
-        if (lastPressDown >= 400) {
+        if (lastPressDown >= 500) {
             amountPressedDown = 0;
             lastPressDown = 0;
         }
