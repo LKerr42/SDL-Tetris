@@ -20,6 +20,9 @@
 #define SPINCW    7
 #define SWITCH    8
 
+#define max(X, Y) ((X) > (Y) ? (X) : (Y))
+#define min(X, Y) ((X) < (Y) ? (X) : (Y))
+
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
@@ -656,13 +659,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_FRect temp2 = {keyX, keyY+intKeyH+5, intKeyW, 100};
     keyboardTextRect = temp2;
 
-    SDL_SetRenderTarget(renderer, keyboardText);
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 130, 255);
-    SDL_RenderClear(renderer);
-
-    SDL_SetRenderTarget(renderer, NULL);
-
     // -- next blocks -- 
     for (int k = 0; k < 4; k++) {
         nextBlocks[k] = SDL_rand(7);
@@ -710,8 +706,8 @@ bool canMove(tetromino *t, int dx, int dy) {
     return true;
 }
 
-void rotateTetrominoCW(tetromino *t) {
-    startSound(&sfx[SPINCW]);
+void rotateTetrominoCCW(tetromino *t) {
+    startSound(&sfx[SPINCCW]);
     int N, Y, X, rx, ry;
     blockStruct temp[4][4];
     if (currentBlock == 0) {
@@ -765,13 +761,13 @@ void rotateTetrominoCW(tetromino *t) {
         } else if (canMove(t, -1, 0)) {
             t->x -= 1;
         } else {
-            rotateTetrominoCCW(t);
+            rotateTetrominoCW(t);
         }
     }
 }
 
-void rotateTetrominoCCW(tetromino *t) {
-    startSound(&sfx[SPINCCW]);
+void rotateTetrominoCW(tetromino *t) {
+    startSound(&sfx[SPINCW]);
     int N, Y, X;
     blockStruct temp[4][4];
     if (currentBlock == 0) {
@@ -826,7 +822,7 @@ void rotateTetrominoCCW(tetromino *t) {
         } else if (canMove(t, -1, 0)) {
             t->x -= 1;
         } else {
-            rotateTetrominoCW(t);
+            rotateTetrominoCCW(t);
         }
     }
 }
@@ -1010,38 +1006,66 @@ void handleKeyboardInput(SDL_Scancode code) {
 Uint8 amountPressed = 0;
 
 textTexture textArray[300];
+textTexture subTextArray[300];
 
-void writeToKeyboardText(char string[], bool write, SDL_Scancode scancode) {
+void writeToKeyboardText(char mainStr[], char subStr[], bool write, SDL_Scancode scancode) {
     SDL_SetRenderTarget(renderer, keyboardText);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 130, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
     if (write) {
         //create surface from string and draw it to the main texture at the centre Y
         if (textArray[scancode].tex == NULL) {
             SDL_Color textColor = {255, 255, 255, 255};
-            SDL_Surface *textSurface = TTF_RenderText_Blended(globalFont, string, strlen(string), textColor);
+            SDL_Surface *textSurface = TTF_RenderText_Blended(globalFont, mainStr, strlen(mainStr), textColor);
             if (!textSurface) {
                 SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
                 SDL_SetRenderTarget(renderer, NULL);
                 return;
             }
-            
-            textArray[scancode].dest.w = textSurface->w;
-            textArray[scancode].dest.h = textSurface->h;
-            textArray[scancode].dest.x = (840 - textArray[scancode].dest.w) / 2;
-            textArray[scancode].dest.y = 0;
-            
-            textArray[scancode].tex = SDL_CreateTextureFromSurface(renderer, textSurface);
+            if (subStr[0] != '\0') {
+                SDL_Surface *subTextSurface = TTF_RenderText_Blended(globalFontS, subStr, strlen(subStr), textColor);
+                SDL_Surface *combined = SDL_CreateSurface(
+                    max(subTextSurface->w, textSurface->w), 
+                    textSurface->h + subTextSurface->h + 10, 
+                    SDL_PIXELFORMAT_RGBA32
+                );
 
-            if (!textArray[scancode].tex) {
-                SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
-                SDL_SetRenderTarget(renderer, NULL);
-                return;
+                SDL_Rect mainDest = {(combined->w - textSurface->w) / 2, 0, textSurface->w, textSurface->h};
+                SDL_Rect subDest = {(combined->w - subTextSurface->w) / 2, textSurface->h + 10, subTextSurface->w, subTextSurface->h};
+
+                SDL_BlitSurface(textSurface, NULL, combined, &mainDest);
+                SDL_BlitSurface(subTextSurface, NULL, combined, &subDest);
+
+                textArray[scancode].dest.w = combined->w;
+                textArray[scancode].dest.h = combined->h;
+                textArray[scancode].dest.x = (840 - textArray[scancode].dest.w) / 2;
+                textArray[scancode].dest.y = 0;
+
+                textArray[scancode].tex = SDL_CreateTextureFromSurface(renderer, combined);
+
+                if (!textArray[scancode].tex) {
+                    SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+                    SDL_SetRenderTarget(renderer, NULL);
+                    return;
+                }
+            } else {
+                textArray[scancode].dest.w = textSurface->w;
+                textArray[scancode].dest.h = textSurface->h;
+                textArray[scancode].dest.x = (840 - textArray[scancode].dest.w) / 2;
+                textArray[scancode].dest.y = 0;
+                
+                textArray[scancode].tex = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+                if (!textArray[scancode].tex) {
+                    SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+                    SDL_SetRenderTarget(renderer, NULL);
+                    return;
+                }
             }
-
+            
             SDL_RenderTexture(renderer, textArray[scancode].tex, NULL, &textArray[scancode].dest);
-            SDL_DestroySurface(textSurface);     
+            SDL_DestroySurface(textSurface); 
         } else {
             SDL_RenderTexture(renderer, textArray[scancode].tex, NULL, &textArray[scancode].dest);
         }
@@ -1163,104 +1187,124 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
 
         // -- numbers --
         case SDL_SCANCODE_1: {  
-            writeToKeyboardText("-1-", pressing, SDL_SCANCODE_1);
+            writeToKeyboardText("-1-", "", pressing, SDL_SCANCODE_1);
             addKeyboardRects(5, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_2: {
-            writeToKeyboardText("-2-", pressing, SDL_SCANCODE_2);
+            writeToKeyboardText("-2-", "", pressing, SDL_SCANCODE_2);
             addKeyboardRects(11, 3, 5, 7, pressing);
             break;  
         }
         case SDL_SCANCODE_3: {
-            writeToKeyboardText("-3-", pressing, SDL_SCANCODE_3);
+            writeToKeyboardText("-3-", "", pressing, SDL_SCANCODE_3);
             addKeyboardRects(17, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_4: {
-            writeToKeyboardText("-4-", pressing, SDL_SCANCODE_4);
+            writeToKeyboardText("-4-", "", pressing, SDL_SCANCODE_4);
             addKeyboardRects(23, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_5: {
+            writeToKeyboardText("-5-", "", pressing, SDL_SCANCODE_5);
             addKeyboardRects(29, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_6: {
+            writeToKeyboardText("-6-", "", pressing, SDL_SCANCODE_6);
             addKeyboardRects(35, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_7: {
+            writeToKeyboardText("-7-", "", pressing, SDL_SCANCODE_7);            
             addKeyboardRects(41, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_8: {
+            writeToKeyboardText("-8-", "", pressing, SDL_SCANCODE_8);
             addKeyboardRects(47, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_9: {
+            writeToKeyboardText("-9-", "", pressing, SDL_SCANCODE_9);
             addKeyboardRects(53, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_0: {
+            writeToKeyboardText("-0-", "", pressing, SDL_SCANCODE_0);
             addKeyboardRects(59, 3, 5, 7, pressing);
             break;
         }
         
         // -- top row --
         case SDL_SCANCODE_ESCAPE: {
+            writeToKeyboardText("-Esc-", "", pressing, SDL_SCANCODE_ESCAPE);
             addKeyboardRects(1, 1, 6, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F1: {
+            writeToKeyboardText("-F1-", "", pressing, SDL_SCANCODE_F1);
             addKeyboardRects(8, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F2: {
+            writeToKeyboardText("-F2-", "", pressing, SDL_SCANCODE_F2);
             addKeyboardRects(13, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F3: {
+            writeToKeyboardText("-F3-", "", pressing, SDL_SCANCODE_F3);
             addKeyboardRects(19, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F4: {
+            writeToKeyboardText("-F4-", "", pressing, SDL_SCANCODE_F4);
             addKeyboardRects(24, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F5: {
+            writeToKeyboardText("-F5-", "", pressing, SDL_SCANCODE_F5);
             addKeyboardRects(30, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F6: {
+            writeToKeyboardText("-F6-", "", pressing, SDL_SCANCODE_F6);
             addKeyboardRects(35, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F7: {
+            writeToKeyboardText("-F7-", "", pressing, SDL_SCANCODE_F7);
             addKeyboardRects(41, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F8: {
+            writeToKeyboardText("-F8-", "", pressing, SDL_SCANCODE_F8);
             addKeyboardRects(46, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F9: {
+            writeToKeyboardText("-F9-", "", pressing, SDL_SCANCODE_F9);
             addKeyboardRects(52, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F10: {
+            writeToKeyboardText("-F10-", "", pressing, SDL_SCANCODE_F10);
             addKeyboardRects(57, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F11: {
+            writeToKeyboardText("-F11-", "", pressing, SDL_SCANCODE_F11);
             addKeyboardRects(63, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F12: {
+            writeToKeyboardText("-F12-", "", pressing, SDL_SCANCODE_F12);
             addKeyboardRects(68, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_DELETE: {
+            writeToKeyboardText("-Del-", "", pressing, SDL_SCANCODE_DELETE);
             addKeyboardRects(79, 1, 6, 3, pressing);
             break;
         }
