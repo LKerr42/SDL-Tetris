@@ -430,6 +430,7 @@ void updateNextBlocks() {
     SDL_SetRenderTarget(renderer, NULL); // back to screen
 }
 
+//audio header
 void displayNextBlocks() {
     SDL_FRect displayRect = {
         (bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
@@ -441,14 +442,14 @@ void displayNextBlocks() {
     SDL_RenderTexture(renderer, nextTexture, NULL, &displayRect);
 }
 
-SDL_AudioSpec spec;
-
 void startSound(sound *s) {
     s -> playing = true;
     SDL_ClearAudioStream(s->stream);
 }
 
 void initaliseAudioFile(sound *wavFile, char path[]) {
+    SDL_AudioSpec spec;
+
     strcpy(wavFile -> source, path);
     wavFile -> audio_buff = NULL;
     wavFile -> audio_len = 0;
@@ -476,9 +477,11 @@ void playWAV(sound *wavFile, bool loop) {
 
         if (queued < 48000) {
             if (remaining > 0) {
-                SDL_PutAudioStreamData(wavFile -> stream,
-                                    wavFile->audio_buff + wavFile->cursor,
-                                    remaining);
+                SDL_PutAudioStreamData(
+                    wavFile -> stream,
+                    wavFile->audio_buff + wavFile->cursor,
+                    remaining
+                );
                 wavFile->cursor += remaining;
             }
         }
@@ -497,6 +500,8 @@ void playWAV(sound *wavFile, bool loop) {
 void restartMainTheme() {
     SDL_ClearAudioStream(mainTheme.stream);
 }
+
+// end audio header
 
 char fileNames[9][16] = {
     "clear",
