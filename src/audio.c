@@ -17,14 +17,10 @@ void initaliseAudioFile(sound *wavFile, char path[]) {
     wavFile -> playing = false;
     wavFile -> cursor = 0;
 
-    if (!SDL_LoadWAV(path, &spec, &wavFile->audio_buff, & wavFile->audio_len)) {
-        SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
-    }
+    SDL_LoadWAV(path, &spec, &wavFile->audio_buff, & wavFile->audio_len);
 
     wavFile -> stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
-    if (!wavFile -> stream) {
-        SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
-    }
+
     SDL_ResumeAudioStreamDevice(wavFile -> stream);
 }
 
