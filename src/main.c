@@ -4,9 +4,12 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3/SDL_audio.h>
 #include <SDL3_image/SDL_image.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> 
+
+#include "include/audio.h"
 
 #define TETROMINO_BLOCK_SIZE 20
 #define KEYBOARD_PIXEL_SIZE  10
@@ -83,17 +86,6 @@ typedef struct {
     int b;
 } colours;
 colours colour[7];
-
-typedef struct {
-    char source[32];
-    Uint8 *audio_buff;
-    Uint32 audio_len;
-    Uint32 cursor;
-    bool playing;
-    SDL_AudioStream *stream;
-} sound;
-sound sfx[9];
-sound mainTheme;
 
 typedef struct {
     SDL_Texture *tex;
@@ -430,7 +422,6 @@ void updateNextBlocks() {
     SDL_SetRenderTarget(renderer, NULL); // back to screen
 }
 
-//audio header
 void displayNextBlocks() {
     SDL_FRect displayRect = {
         (bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
@@ -441,67 +432,6 @@ void displayNextBlocks() {
 
     SDL_RenderTexture(renderer, nextTexture, NULL, &displayRect);
 }
-
-void startSound(sound *s) {
-    s -> playing = true;
-    SDL_ClearAudioStream(s->stream);
-}
-
-void initaliseAudioFile(sound *wavFile, char path[]) {
-    SDL_AudioSpec spec;
-
-    strcpy(wavFile -> source, path);
-    wavFile -> audio_buff = NULL;
-    wavFile -> audio_len = 0;
-    wavFile -> playing = false;
-    wavFile -> cursor = 0;
-
-    if (!SDL_LoadWAV(path, &spec, &wavFile->audio_buff, & wavFile->audio_len)) {
-        SDL_Log("Couldn't load .wav file: %s", SDL_GetError());
-    }
-
-    wavFile -> stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
-    if (!wavFile -> stream) {
-        SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
-    }
-    SDL_ResumeAudioStreamDevice(wavFile -> stream);
-}
-
-void playWAV(sound *wavFile, bool loop) {
-    if (!loop) {
-        if (!wavFile->playing) return;
-
-        int queued = SDL_GetAudioStreamQueued(wavFile -> stream);
-
-        Uint32 remaining = wavFile->audio_len - wavFile->cursor;
-
-        if (queued < 48000) {
-            if (remaining > 0) {
-                SDL_PutAudioStreamData(
-                    wavFile -> stream,
-                    wavFile->audio_buff + wavFile->cursor,
-                    remaining
-                );
-                wavFile->cursor += remaining;
-            }
-        }
-
-        if (wavFile->cursor >= wavFile->audio_len && queued == 0) {
-            wavFile->playing = false;
-            wavFile->cursor = 0;
-        }
-    } else {
-        if (SDL_GetAudioStreamQueued(wavFile -> stream) < ((int) wavFile -> audio_len)) {
-            SDL_PutAudioStreamData(wavFile -> stream, wavFile -> audio_buff, (int) wavFile -> audio_len);
-        }
-    }
-}
-
-void restartMainTheme() {
-    SDL_ClearAudioStream(mainTheme.stream);
-}
-
-// end audio header
 
 char fileNames[9][16] = {
     "clear",
