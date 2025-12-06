@@ -11,40 +11,14 @@
 #include "include/audio.h"
 #include "include/text.h"
 #include "include/keyboard.h"
+#include "include/tetromino.h"
 
-#define CLEAR     0 
-#define HOLYMOLY  1
-#define LAND      2
-#define MOVELEFT  3
-#define MOVERIGHT 4
-#define OPEN      5
-#define SPINCCW   6
-#define SPINCW    7
-#define SWITCH    8
-
-#define max(X, Y) ((X) > (Y) ? (X) : (Y))
-#define min(X, Y) ((X) < (Y) ? (X) : (Y))
-
-// Blocks
-int currentBlock = 0, score = 0;
-
-int nextBlocks[4];
-
-bool winning = false, keyboardCard = false, titleCard = true, firstRun = true;
-bool showWireframe = true;
+//file specific globals
+int score = 0;
+bool firstRun = true;
 char scoreString[7] = "0000000";
 
 appContext app;
-
-typedef struct {
-    int x;
-    int y;
-    int r;
-    int g;
-    int b;
-    bool active;
-} blockStruct;
-blockStruct block;
 
 typedef struct {
     bool v;
@@ -54,18 +28,7 @@ typedef struct {
 } setBlocks;
 setBlocks filledBlocks[22][12];
 
-typedef struct {
-    blockStruct blocks[4][4];
-    blockStruct titleBlocks[5][4];
-    int r;
-    int g;
-    int b;
-    int x;
-    int y;
-} tetromino;
-tetromino tetArray[7];
 tetromino titleTetroes[6];
-tetromino currentTet;
 tetromino wireframeTet;
 
 typedef struct {
@@ -135,31 +98,31 @@ int shapes[7][4][4] = {
 };
 
 void setupTetrominos() {
-    setTetColour(&tetArray[0], 0, 255, 255); //Long boy
-    setTetColour(&tetArray[1], 0, 0, 255);   //Left L
-    setTetColour(&tetArray[2], 255, 160, 0); //Right L
-    setTetColour(&tetArray[3], 255, 255, 0); //Square 
-    setTetColour(&tetArray[4], 0, 255, 0);   //Right squiggle
-    setTetColour(&tetArray[5], 150, 0, 255); //T boy
-    setTetColour(&tetArray[6], 255, 0, 0);   //Left squiggle
+    setTetColour(&app.tetArray[0], 0, 255, 255); //Long boy
+    setTetColour(&app.tetArray[1], 0, 0, 255);   //Left L
+    setTetColour(&app.tetArray[2], 255, 160, 0); //Right L
+    setTetColour(&app.tetArray[3], 255, 255, 0); //Square 
+    setTetColour(&app.tetArray[4], 0, 255, 0);   //Right squiggle
+    setTetColour(&app.tetArray[5], 150, 0, 255); //T boy
+    setTetColour(&app.tetArray[6], 255, 0, 0);   //Left squiggle
 
     for (int count = 0; count < 7; count++) {
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
-                tetArray[count].blocks[y][x].x = x;
-                tetArray[count].blocks[y][x].y = y;
+                app.tetArray[count].blocks[y][x].x = x;
+                app.tetArray[count].blocks[y][x].y = y;
 
                 if (shapes[count][y][x] == 1) {
-                    tetArray[count].blocks[y][x].active = true;
-                    setBlockColour(&tetArray[count].blocks[y][x], tetArray[count].r, tetArray[count].g, tetArray[count].b);
+                    app.tetArray[count].blocks[y][x].active = true;
+                    setBlockColour(&app.tetArray[count].blocks[y][x], app.tetArray[count].r, app.tetArray[count].g, app.tetArray[count].b);
                 } else {
-                    tetArray[count].blocks[y][x].active = false;
+                    app.tetArray[count].blocks[y][x].active = false;
                 }
 
             }
         }
-        tetArray[count].x = 4;
-        tetArray[count].y = 1;
+        app.tetArray[count].x = 4;
+        app.tetArray[count].y = 1;
     }
 }
 
@@ -331,7 +294,7 @@ void buildBoardTexture() {
             }
         }
     }
-    if (showWireframe) {
+    if (app.showWireframe) {
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
                 if (wireframeTet.blocks[y][x].active) {
@@ -377,7 +340,7 @@ void updateNextBlocks() {
     for (int block = 0; block < 4; block++) {
         for (int d = 0; d < 4; d++) {
             for (int e = 0; e < 4; e++) {
-                if (shapes[nextBlocks[block]][d][e] == 1) {
+                if (shapes[app.nextBlocks[block]][d][e] == 1) {
                     posX = e * TETROMINO_BLOCK_SIZE;
                     posY = d * TETROMINO_BLOCK_SIZE + ((TETROMINO_BLOCK_SIZE*3) * block);
                     SDL_FRect Nrect = {
@@ -386,7 +349,7 @@ void updateNextBlocks() {
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlockToTexture(Nrect, tetArray[nextBlocks[block]].r, tetArray[nextBlocks[block]].g, tetArray[nextBlocks[block]].b, nextTexture, false);
+                    displayBlockToTexture(Nrect, app.tetArray[app.nextBlocks[block]].r, app.tetArray[app.nextBlocks[block]].g, app.tetArray[app.nextBlocks[block]].b, nextTexture, false);
                 }
             }
         }
@@ -426,6 +389,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     // -- setup --
     app.width = 1000;
     app.height = 750;
+    app.titleCard = true;
+    app.showWireframe = true;
 
     app.bWidthMin = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
     app.bWidthMax = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) + 5;
@@ -572,7 +537,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     // -- next blocks -- 
     for (int k = 0; k < 4; k++) {
-        nextBlocks[k] = SDL_rand(7);
+        app.nextBlocks[k] = SDL_rand(7);
     }
 
     updateNextBlocks();
@@ -621,9 +586,9 @@ void rotateTetrominoCCW(tetromino *t) {
     startSound(&sfx[SPINCCW]);
     int N, Y, X, rx, ry;
     blockStruct temp[4][4];
-    if (currentBlock == 0) {
+    if (app.currentBlock == 0) {
         N = 4;
-    } else if (currentBlock == 3) {
+    } else if (app.currentBlock == 3) {
         N = 2;
     } else {
         N = 3;
@@ -681,9 +646,9 @@ void rotateTetrominoCW(tetromino *t) {
     startSound(&sfx[SPINCW]);
     int N, Y, X;
     blockStruct temp[4][4];
-    if (currentBlock == 0) {
+    if (app.currentBlock == 0) {
         N = 4;
-    } else if (currentBlock == 3) {
+    } else if (app.currentBlock == 3) {
         N = 2;
     } else {
         N = 3;
@@ -755,27 +720,25 @@ void resetBoard() {
     renderBoard();
 }
 
-int heldtet = -1;
-
 void resetGame() {
     resetBoard();
     for (int i = 0; i < 7; i++) {
         scoreString[i] = '0';
         if (i < 4) {
-            nextBlocks[i] = SDL_rand(7);
+            app.nextBlocks[i] = SDL_rand(7);
         }
     }
     score = 0;
-    heldtet = -1;
-    currentBlock = 0;
-    currentTet.x = 4;
-    currentTet.y = 1;
-    winning = true;
+    app.heldtet = -1;
+    app.currentBlock = 0;
+    app.currentTet.x = 4;
+    app.currentTet.y = 1;
+    app.winning = true;
     firstRun = true;
 }
 
 void runWireframes(tetromino *copyTet) {
-    if (showWireframe) {
+    if (app.showWireframe) {
         wireframeTet = *copyTet;
         while (true) {
             if (canMove(&wireframeTet, 0, 1)) {
@@ -788,525 +751,6 @@ void runWireframes(tetromino *copyTet) {
     }
 }
 
-Uint8 amountPressedDown = 0;
-
-void handleKeyboardInput(SDL_Scancode code) {
-    switch (code) {
-        case SDL_SCANCODE_LEFT: {
-            if (canMove(&currentTet, -1, 0)) {
-                startSound(&sfx[MOVELEFT]);
-                currentTet.x -= 1;
-                runWireframes(&currentTet);
-            }
-            break;
-        }
-        case SDL_SCANCODE_RIGHT: {
-            if (canMove(&currentTet, 1, 0)) {
-                startSound(&sfx[MOVERIGHT]);
-                currentTet.x += 1;
-                runWireframes(&currentTet);
-            }
-            break;
-        }
-        case SDL_SCANCODE_DOWN: {
-            if (canMove(&currentTet, 0, 1)) {
-                currentTet.y += 1;
-            }
-            break;
-        }
-        case SDL_SCANCODE_D: {
-            rotateTetrominoCW(&currentTet);
-            runWireframes(&currentTet);
-            break;
-        }
-        case SDL_SCANCODE_A: {
-            rotateTetrominoCCW(&currentTet);
-            runWireframes(&currentTet);
-            break;
-        }
-        case SDL_SCANCODE_R: {
-            if (winning) {
-                restartMainTheme();
-                runWireframes(&currentTet);
-                resetGame();
-                startSound(&sfx[OPEN]);
-            }
-            break;
-        }
-        case SDL_SCANCODE_H: {
-            startSound(&sfx[HOLYMOLY]);
-            break;
-        }
-        case SDL_SCANCODE_SPACE: {
-            if (titleCard) {
-                restartMainTheme();
-                startSound(&sfx[OPEN]);
-                titleCard = false;
-                keyboardCard = true;
-                break;
-            } else if (keyboardCard) {
-                restartMainTheme();
-                startSound(&sfx[OPEN]);
-                keyboardCard = false;
-                winning = true;
-                break;
-            } else if (winning) {
-                startSound(&sfx[SWITCH]);
-                //swap values
-                int temp = heldtet;
-                heldtet = currentBlock;
-                currentBlock = temp;
-
-                if (currentBlock == -1) { //if starting
-                    currentBlock = nextBlocks[0];
-                    for (int n = 0; n < 3; n++) {
-                        nextBlocks[n] = nextBlocks[n+1];
-                    }
-                    nextBlocks[3] = (int)SDL_rand(7); 
-                }
-                currentTet = tetArray[currentBlock];
-                currentTet.x = 4;
-                currentTet.y = 1;
-                updateNextBlocks();
-                runWireframes(&currentTet);
-                break;
-            } else {
-                startSound(&sfx[OPEN]);
-                restartMainTheme();
-                resetGame();
-                break;
-            }
-            break;
-        }
-        case SDL_SCANCODE_LALT: {
-            showWireframe = !showWireframe;
-            runWireframes(&currentTet);
-            buildBoardTexture();
-            break;
-        }
-        case SDL_SCANCODE_RALT: {
-            showWireframe = !showWireframe;
-            runWireframes(&currentTet);
-            buildBoardTexture();
-            break;
-        }
-    }
-}
-
-Uint8 amountPressed = 0;
-
-textTexture textArray[300];
-
-void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
-    switch (code) {
-        // -- letters --
-        case SDL_SCANCODE_Q: {
-            writeToKeyboardText(&app, "-Q-", "", pressing, SDL_SCANCODE_Q);
-            addKeyboardRects(&app, 7, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_W: {
-            writeToKeyboardText(&app, "-W-", "", pressing, SDL_SCANCODE_W);
-            addKeyboardRects(&app, 13, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_E: {
-            writeToKeyboardText(&app, "-E-", "", pressing, SDL_SCANCODE_E);
-            addKeyboardRects(&app, 19, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_R: {
-            writeToKeyboardText(&app, "-R-", "", pressing, SDL_SCANCODE_R);
-            addKeyboardRects(&app, 25, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_T: {
-            writeToKeyboardText(&app, "-T-", "", pressing, SDL_SCANCODE_T);
-            addKeyboardRects(&app, 31, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_Y: {
-            writeToKeyboardText(&app, "-Y-", "", pressing, SDL_SCANCODE_Y);
-            addKeyboardRects(&app, 37, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_U: {
-            writeToKeyboardText(&app, "-U-", "", pressing, SDL_SCANCODE_U);
-            addKeyboardRects(&app, 43, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_I: {
-            writeToKeyboardText(&app, "-I-", "", pressing, SDL_SCANCODE_I);
-            addKeyboardRects(&app, 49, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_O: {
-            writeToKeyboardText(&app, "-O-", "", pressing, SDL_SCANCODE_O);
-            addKeyboardRects(&app, 55, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_P: { //TODO: add pause function
-            writeToKeyboardText(&app, "-P-", "", pressing, SDL_SCANCODE_P);
-            addKeyboardRects(&app, 61, 9, 5, 7, pressing);
-            break;
-        }
-
-        case SDL_SCANCODE_A: {
-            writeToKeyboardText(&app, "-A-", "Tap to spin block counter-clockwise", pressing, SDL_SCANCODE_A);
-            addKeyboardRects(&app, 9, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_S: {
-            writeToKeyboardText(&app, "-S-", "", pressing, SDL_SCANCODE_S);
-            addKeyboardRects(&app, 15, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_D: {
-            writeToKeyboardText(&app, "-D-", "Tap to spin block clockwise", pressing, SDL_SCANCODE_D);
-            addKeyboardRects(&app, 21, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F: {
-            writeToKeyboardText(&app, "-F-", "", pressing, SDL_SCANCODE_F);
-            addKeyboardRects(&app, 27, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_G: {
-            writeToKeyboardText(&app, "-G-", "", pressing, SDL_SCANCODE_G);
-            addKeyboardRects(&app, 33, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_H: {
-            writeToKeyboardText(&app, "-H-", "Its a surprise :)", pressing, SDL_SCANCODE_H);
-            addKeyboardRects(&app, 39, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_J: {
-            writeToKeyboardText(&app, "-J-", "", pressing, SDL_SCANCODE_J);
-            addKeyboardRects(&app, 45, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_K: {
-            writeToKeyboardText(&app, "-K-", "", pressing, SDL_SCANCODE_K);
-            addKeyboardRects(&app, 51, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_L: {
-            writeToKeyboardText(&app, "-L-", "", pressing, SDL_SCANCODE_L);
-            addKeyboardRects(&app, 57, 15, 5, 7, pressing);
-            break;
-        }
-
-        case SDL_SCANCODE_Z: {
-            writeToKeyboardText(&app, "-Z-", "", pressing, SDL_SCANCODE_Z);
-            addKeyboardRects(&app, 12, 21, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_X: {
-            writeToKeyboardText(&app, "-X-", "", pressing, SDL_SCANCODE_X);
-            addKeyboardRects(&app, 18, 21, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_C: {
-            writeToKeyboardText(&app, "-C-", "", pressing, SDL_SCANCODE_C);
-            addKeyboardRects(&app, 24, 21, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_V: {
-            writeToKeyboardText(&app, "-V-", "", pressing, SDL_SCANCODE_V);
-            addKeyboardRects(&app, 30, 21, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_B: {
-            writeToKeyboardText(&app, "-B-", "", pressing, SDL_SCANCODE_B);
-            addKeyboardRects(&app, 36, 21, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_N: {
-            writeToKeyboardText(&app, "-N-", "", pressing, SDL_SCANCODE_N);
-            addKeyboardRects(&app, 42, 21, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_M: {
-            writeToKeyboardText(&app, "-M-", "", pressing, SDL_SCANCODE_M);
-            addKeyboardRects(&app, 48, 21, 5, 7, pressing);
-            break;
-        }
-
-        // -- numbers --
-        case SDL_SCANCODE_1: {  
-            writeToKeyboardText(&app, "-1-", "", pressing, SDL_SCANCODE_1);
-            addKeyboardRects(&app, 5, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_2: {
-            writeToKeyboardText(&app, "-2-", "", pressing, SDL_SCANCODE_2);
-            addKeyboardRects(&app, 11, 3, 5, 7, pressing);
-            break;  
-        }
-        case SDL_SCANCODE_3: {
-            writeToKeyboardText(&app, "-3-", "", pressing, SDL_SCANCODE_3);
-            addKeyboardRects(&app, 17, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_4: {
-            writeToKeyboardText(&app, "-4-", "", pressing, SDL_SCANCODE_4);
-            addKeyboardRects(&app, 23, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_5: {
-            writeToKeyboardText(&app, "-5-", "", pressing, SDL_SCANCODE_5);
-            addKeyboardRects(&app, 29, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_6: {
-            writeToKeyboardText(&app, "-6-", "", pressing, SDL_SCANCODE_6);
-            addKeyboardRects(&app, 35, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_7: {
-            writeToKeyboardText(&app, "-7-", "", pressing, SDL_SCANCODE_7);            
-            addKeyboardRects(&app, 41, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_8: {
-            writeToKeyboardText(&app, "-8-", "", pressing, SDL_SCANCODE_8);
-            addKeyboardRects(&app, 47, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_9: {
-            writeToKeyboardText(&app, "-9-", "", pressing, SDL_SCANCODE_9);
-            addKeyboardRects(&app, 53, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_0: {
-            writeToKeyboardText(&app, "-0-", "", pressing, SDL_SCANCODE_0);
-            addKeyboardRects(&app, 59, 3, 5, 7, pressing);
-            break;
-        }
-        
-        // -- top row --
-        case SDL_SCANCODE_ESCAPE: {
-            writeToKeyboardText(&app, "-Esc-", "", pressing, SDL_SCANCODE_ESCAPE);
-            addKeyboardRects(&app, 1, 1, 6, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F1: {
-            writeToKeyboardText(&app, "-F1-", "", pressing, SDL_SCANCODE_F1);
-            addKeyboardRects(&app, 8, 1, 4, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F2: {
-            writeToKeyboardText(&app, "-F2-", "", pressing, SDL_SCANCODE_F2);
-            addKeyboardRects(&app, 13, 1, 5, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F3: {
-            writeToKeyboardText(&app, "-F3-", "", pressing, SDL_SCANCODE_F3);
-            addKeyboardRects(&app, 19, 1, 4, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F4: {
-            writeToKeyboardText(&app, "-F4-", "", pressing, SDL_SCANCODE_F4);
-            addKeyboardRects(&app, 24, 1, 5, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F5: {
-            writeToKeyboardText(&app, "-F5-", "", pressing, SDL_SCANCODE_F5);
-            addKeyboardRects(&app, 30, 1, 4, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F6: {
-            writeToKeyboardText(&app, "-F6-", "", pressing, SDL_SCANCODE_F6);
-            addKeyboardRects(&app, 35, 1, 5, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F7: {
-            writeToKeyboardText(&app, "-F7-", "", pressing, SDL_SCANCODE_F7);
-            addKeyboardRects(&app, 41, 1, 4, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F8: {
-            writeToKeyboardText(&app, "-F8-", "", pressing, SDL_SCANCODE_F8);
-            addKeyboardRects(&app, 46, 1, 5, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F9: {
-            writeToKeyboardText(&app, "-F9-", "", pressing, SDL_SCANCODE_F9);
-            addKeyboardRects(&app, 52, 1, 4, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F10: {
-            writeToKeyboardText(&app, "-F10-", "", pressing, SDL_SCANCODE_F10);
-            addKeyboardRects(&app, 57, 1, 5, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F11: {
-            writeToKeyboardText(&app, "-F11-", "", pressing, SDL_SCANCODE_F11);
-            addKeyboardRects(&app, 63, 1, 4, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_F12: {
-            writeToKeyboardText(&app, "-F12-", "", pressing, SDL_SCANCODE_F12);
-            addKeyboardRects(&app, 68, 1, 5, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_DELETE: {
-            writeToKeyboardText(&app, "-Del-", "", pressing, SDL_SCANCODE_DELETE);
-            addKeyboardRects(&app, 79, 1, 6, 3, pressing);
-            break;
-        }
-
-        // --  bottom row --
-        case SDL_SCANCODE_LCTRL: {
-            writeToKeyboardText(&app, "-L Ctrl-", "", pressing, SDL_SCANCODE_LCTRL);
-            addKeyboardRects(&app, 1, 27, 6, 6, pressing);
-            break;
-        }
-        case SDL_SCANCODE_LGUI: {
-            writeToKeyboardText(&app, "-Wnd-", "", pressing, SDL_SCANCODE_LGUI);
-            addKeyboardRects(&app, 14, 27, 5, 6, pressing);
-            break;
-        }
-        case SDL_SCANCODE_LALT: {
-            writeToKeyboardText(&app, "-L Alt-", "Tap to show/hide wireframes", pressing, SDL_SCANCODE_LALT);
-            addKeyboardRects(&app, 20, 27, 5, 6, pressing);
-            break;
-        }
-        case SDL_SCANCODE_SPACE: {
-            writeToKeyboardText(&app, "-Space-", "Tap to swap blocks, double tap to start game", pressing, SDL_SCANCODE_SPACE);
-            addKeyboardRects(&app, 26, 27, 29, 6, pressing);
-
-            if (!pressing) {
-                amountPressed += 1;
-            }
-            break;
-        }
-        case SDL_SCANCODE_RALT: {
-            writeToKeyboardText(&app, "-R Alt-", "Tap to show/hide wireframes", pressing, SDL_SCANCODE_RALT);
-            addKeyboardRects(&app, 56, 27, 5, 6, pressing);
-            break;
-        }
-        case SDL_SCANCODE_APPLICATION: {
-            writeToKeyboardText(&app, "-App-", "", pressing, SDL_SCANCODE_APPLICATION);
-            addKeyboardRects(&app, 62, 27, 5, 6, pressing);
-            break;
-        }
-        case SDL_SCANCODE_LEFT: {
-            writeToKeyboardText(&app, "-Left-", "Tap to move block left", pressing, SDL_SCANCODE_LEFT);
-            addKeyboardRects(&app, 68, 28, 6, 5, pressing);
-            break;
-        }
-        case SDL_SCANCODE_UP: {
-            writeToKeyboardText(&app, "-Up-", "", pressing, SDL_SCANCODE_UP);
-            addKeyboardRects(&app, 74, 27, 5, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_DOWN: {
-            writeToKeyboardText(&app, "-Down-", "Tap to move block down, double tap for auto place", pressing, SDL_SCANCODE_DOWN);
-            addKeyboardRects(&app, 74, 30, 5, 3, pressing);
-            break;
-        }
-        case SDL_SCANCODE_RIGHT: {
-            writeToKeyboardText(&app, "-Right-", "Tap to move block right", pressing, SDL_SCANCODE_RIGHT);
-            addKeyboardRects(&app, 79, 28, 6, 5, pressing);
-            break;
-        }
-
-        // -- left side --
-        case SDL_SCANCODE_GRAVE: {
-            writeToKeyboardText(&app, "-Grave-", "", pressing, SDL_SCANCODE_GRAVE);
-            addKeyboardRects(&app, 1, 4, 3, 5, pressing);
-            break;
-        }
-        case SDL_SCANCODE_TAB: {
-             writeToKeyboardText(&app, "-Tab-", "", pressing, SDL_SCANCODE_TAB);
-            addKeyboardRects(&app, 1, 9, 5, 6, pressing);
-            break;
-        }
-        case SDL_SCANCODE_CAPSLOCK: {
-             writeToKeyboardText(&app, "-Caps-", "", pressing, SDL_SCANCODE_CAPSLOCK);
-            addKeyboardRects(&app, 1, 15, 7, 6, pressing);
-            break;
-        }
-        case SDL_SCANCODE_LSHIFT: {
-             writeToKeyboardText(&app, "-L Shift-", "", pressing, SDL_SCANCODE_LSHIFT);
-            addKeyboardRects(&app, 1, 21, 10, 7, pressing);
-            break;
-        }
-
-        // -- right side --
-        case SDL_SCANCODE_MINUS: {
-            writeToKeyboardText(&app, "-Minus-", "", pressing, SDL_SCANCODE_MINUS);
-            addKeyboardRects(&app, 65, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_EQUALS: {
-            writeToKeyboardText(&app, "-Equals-", "", pressing, SDL_SCANCODE_EQUALS);
-            addKeyboardRects(&app, 71, 3, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_BACKSPACE: {
-            writeToKeyboardText(&app, "-Backspace-", "", pressing, SDL_SCANCODE_BACKSPACE);
-            addKeyboardRects(&app, 77, 3, 8, 7, pressing);
-            break;
-        }
-
-        case SDL_SCANCODE_LEFTBRACKET: { //six-seven???
-            writeToKeyboardText(&app, "-L Bracket-", "", pressing, SDL_SCANCODE_LEFTBRACKET);
-            addKeyboardRects(&app, 67, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_RIGHTBRACKET: {
-            writeToKeyboardText(&app, "-R Bracket-", "", pressing, SDL_SCANCODE_RIGHTBRACKET);
-            addKeyboardRects(&app, 73, 9, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_BACKSLASH: {
-            writeToKeyboardText(&app, "-Backslash-", "", pressing, SDL_SCANCODE_BACKSLASH);
-            addKeyboardRects(&app, 79, 9, 6, 7, pressing);
-            break;
-        }
-
-        case SDL_SCANCODE_SEMICOLON: {
-            writeToKeyboardText(&app, "-Semicolon-", "", pressing, SDL_SCANCODE_SEMICOLON);
-            addKeyboardRects(&app, 63, 15, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_APOSTROPHE: { //six-nine???
-            writeToKeyboardText(&app, "-Apostrophe-", "", pressing, SDL_SCANCODE_APOSTROPHE);
-            addKeyboardRects(&app, 69, 15, 6, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_RETURN: {
-            writeToKeyboardText(&app, "-Enter-", "", pressing, SDL_SCANCODE_RETURN);
-            addKeyboardRects(&app, 76, 15, 9, 7, pressing);
-            break;
-        }
-    
-        case SDL_SCANCODE_COMMA: {
-            writeToKeyboardText(&app, "-Comma-", "", pressing, SDL_SCANCODE_COMMA);
-            addKeyboardRects(&app, 54, 21, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_PERIOD: {
-            writeToKeyboardText(&app, "-Period-", "", pressing, SDL_SCANCODE_PERIOD);
-            addKeyboardRects(&app, 60, 21, 5, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_SLASH: {
-            writeToKeyboardText(&app, "-Slash-", "", pressing, SDL_SCANCODE_SLASH);
-            addKeyboardRects(&app, 66, 21, 6, 7, pressing);
-            break;
-        }
-        case SDL_SCANCODE_RSHIFT: {
-            writeToKeyboardText(&app, "-R Shift-", "", pressing, SDL_SCANCODE_RSHIFT);
-            addKeyboardRects(&app, 73, 21, 12, 7, pressing);
-            break;
-        }
-    }
-}
-
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     switch (event->type) {
@@ -1315,19 +759,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             break;
         }
         case SDL_EVENT_KEY_DOWN: {
-            if (keyboardCard) {
-                handleInputKeyboardCard(event->key.scancode, true);
+            if (app.keyboardCard) {
+                handleInputKeyboardCard(&app, event->key.scancode, true);
             } else {
-                handleKeyboardInput(event->key.scancode);
+                handleKeyboardInput(&app, event->key.scancode);
             }
             break;
         }
         case SDL_EVENT_KEY_UP: {
-            if (keyboardCard) {
-                handleInputKeyboardCard(event->key.scancode, false);
+            if (app.keyboardCard) {
+                handleInputKeyboardCard(&app, event->key.scancode, false);
             } 
             if (event->key.scancode == SDL_SCANCODE_DOWN) {
-                amountPressedDown++;
+                app.amountPressedDown++;
             }
         }
         case SDL_EVENT_WINDOW_RESIZED: {
@@ -1384,7 +828,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     }
     playWAV(&mainTheme, true);
 
-    if (titleCard) {
+    if (app.titleCard) {
         //change through colours
         if (now - lastChange >= 500) {
             if (currentMove == 6) {
@@ -1423,86 +867,86 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 }
             }
         }
-    } else if (keyboardCard) {
+    } else if (app.keyboardCard) {
         SDL_RenderTexture(app.renderer, app.keyboardText, NULL, &keyboardTextRect);
         SDL_RenderTexture(app.renderer, app.backgroundKeyboard, NULL, &keyRect);
         SDL_RenderTexture(app.renderer, keyboard, NULL, &keyRect);
-        if (amountPressed == 1) {
+        if (app.amountPressed == 1) {
             lastPress++;
-        } else if (amountPressed == 2) {
+        } else if (app.amountPressed == 2) {
             restartMainTheme();
             startSound(&sfx[OPEN]);
-            keyboardCard = false;
-            winning = true;
-            amountPressed = 0;
+            app.keyboardCard = false;
+            app.winning = true;
+            app.amountPressed = 0;
         }
 
         if (lastPress >= 500) {
-            amountPressed = 0;
+            app.amountPressed = 0;
             lastPress = 0;
         }
-    } else if (winning) { 
+    } else if (app.winning) { 
         displayStaticText(&app);
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
         if (firstRun == true) {
             updateNextBlocks(); 
             firstRun = false;
-            currentTet = tetArray[currentBlock];
-            runWireframes(&currentTet);
+            app.currentTet = app.tetArray[app.currentBlock];
+            runWireframes(&app.currentTet);
         }
         displayText(&app, scoreString, (app.bWidthMax*TETROMINO_BLOCK_SIZE)+60, (app.bHeightMin*TETROMINO_BLOCK_SIZE)+49, app.globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
         char incompleteScore[7];
 
-        if (amountPressedDown == 1) {
+        if (app.amountPressedDown == 1) {
             lastPressDown++;
-        } else if (amountPressedDown == 2) {
+        } else if (app.amountPressedDown == 2) {
             while (true) {
-                if (canMove(&currentTet, 0, 1)) {
-                    currentTet.y += 1;
+                if (canMove(&app.currentTet, 0, 1)) {
+                    app.currentTet.y += 1;
                 } else {
                     break;
                 }
             }
-            amountPressedDown = 0;
+            app.amountPressedDown = 0;
             lastPressDown = 0;
         }
 
         if (lastPressDown >= 500) {
-            amountPressedDown = 0;
+            app.amountPressedDown = 0;
             lastPressDown = 0;
         }
 
         if (now - lastFallTime >= 1000) {
             //check if any are above a set block
-            if (canMove(&currentTet, 0, 1)) {
-                currentTet.y += 1;
+            if (canMove(&app.currentTet, 0, 1)) {
+                app.currentTet.y += 1;
             } else {
                 startSound(&sfx[LAND]);
                 //set block
                 for (int k = 0; k < 4; k++) {
                     for (int l = 0; l < 4; l++) {
-                        if (currentTet.blocks[k][l].active == true) {
-                            posX = currentTet.x+currentTet.blocks[k][l].x;
-                            posY = currentTet.y+currentTet.blocks[k][l].y;
+                        if (app.currentTet.blocks[k][l].active == true) {
+                            posX = app.currentTet.x+app.currentTet.blocks[k][l].x;
+                            posY = app.currentTet.y+app.currentTet.blocks[k][l].y;
 
                             filledBlocks[posY][posX].v = true; 
-                            filledBlocks[posY][posX].r = currentTet.blocks[k][l].r; 
-                            filledBlocks[posY][posX].g = currentTet.blocks[k][l].g;
-                            filledBlocks[posY][posX].b = currentTet.blocks[k][l].b;
+                            filledBlocks[posY][posX].r = app.currentTet.blocks[k][l].r; 
+                            filledBlocks[posY][posX].g = app.currentTet.blocks[k][l].g;
+                            filledBlocks[posY][posX].b = app.currentTet.blocks[k][l].b;
                         }
                     }
                 }
 
                 //reset block
-                currentBlock = nextBlocks[0];
+                app.currentBlock = app.nextBlocks[0];
                 for (int n = 0; n < 3; n++) {
-                    nextBlocks[n] = nextBlocks[n+1];
+                    app.nextBlocks[n] = app.nextBlocks[n+1];
                 }
-                nextBlocks[3] = (int)SDL_rand(7); 
-                currentTet = tetArray[currentBlock];
-                currentTet.x = 4;
-                currentTet.y = 1;
+                app.nextBlocks[3] = (int)SDL_rand(7); 
+                app.currentTet = app.tetArray[app.currentBlock];
+                app.currentTet.x = 4;
+                app.currentTet.y = 1;
                 
                 updateNextBlocks();
 
@@ -1520,7 +964,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     }
                 }
 
-                runWireframes(&currentTet);
+                runWireframes(&app.currentTet);
 
                 //update score
                 if (linesCleared > 0) {
@@ -1553,7 +997,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 //lose condition
                 for (int m = 1; m < 11; m++) {
                     if (filledBlocks[1][m].v == true) {
-                        winning = false;
+                        app.winning = false;
                         SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
                         break;
                     }
@@ -1570,16 +1014,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         //display falling tetromino
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
-                if (currentTet.blocks[y][x].active) {
-                    posX = currentTet.x + x;
-                    posY = currentTet.y + y;
+                if (app.currentTet.blocks[y][x].active) {
+                    posX = app.currentTet.x + x;
+                    posY = app.currentTet.y + y;
                     SDL_FRect Brect = {
                         (posX + app.bWidthMin) * TETROMINO_BLOCK_SIZE,
                         (posY + app.bHeightMin) * TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlock(Brect, currentTet.r, currentTet.g, currentTet.b);
+                    displayBlock(Brect, app.currentTet.r, app.currentTet.g, app.currentTet.b);
                 }
             }
         }
@@ -1588,23 +1032,23 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         int baseY = (app.bHeightMin*TETROMINO_BLOCK_SIZE)+70;
 
         //display held tetromino
-        if (heldtet != -1) {
+        if (app.heldtet != -1) {
             for (int k = 0; k < 4; k++) {
                 for (int l = 0; l < 4; l++) {
-                    if (shapes[heldtet][k][l] == 1) {
+                    if (shapes[app.heldtet][k][l] == 1) {
                         SDL_FRect Hrect = {
                             l * TETROMINO_BLOCK_SIZE + baseX,
                             k * TETROMINO_BLOCK_SIZE + baseY,
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Hrect, tetArray[heldtet].r, tetArray[heldtet].g, tetArray[heldtet].b);
+                        displayBlock(Hrect, app.tetArray[app.heldtet].r, app.tetArray[app.heldtet].g, app.tetArray[app.heldtet].b);
                     }
                 }
             } 
         }
 
-    } else if (titleCard == false) { //lose card
+    } else if (app.titleCard == false) { //lose card
         SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
         SDL_RenderClear(app.renderer);
         bool displayed = false;
