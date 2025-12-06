@@ -12,8 +12,6 @@
 #include "include/audio.h"
 #include "include/text.h"
 
-#define TETROMINO_BLOCK_SIZE 20
-#define KEYBOARD_PIXEL_SIZE  10
 #define CLEAR     0 
 #define HOLYMOLY  1
 #define LAND      2
@@ -27,12 +25,8 @@
 #define max(X, Y) ((X) > (Y) ? (X) : (Y))
 #define min(X, Y) ((X) < (Y) ? (X) : (Y))
 
-SDL_Texture *staticText;
-
 // Blocks
-int bWidthMin, bWidthMax, bHeightMin, bHeightMax; 
 int currentBlock = 0, score = 0;
-float textW, textH;
 
 int nextBlocks[4];
 
@@ -83,7 +77,6 @@ colours colour[7];
 
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
-void setupStaticText();
 
 void setBlockColour(blockStruct *block, int R, int G, int B) {
     block -> r = R;
@@ -371,8 +364,8 @@ void buildBoardTexture() {
 //TODO: improve efficency by moving rect def to widow resize
 void renderBoard() {
     SDL_FRect displayRect = {
-        bWidthMin*TETROMINO_BLOCK_SIZE,
-        bHeightMin*TETROMINO_BLOCK_SIZE,
+        app.bWidthMin*TETROMINO_BLOCK_SIZE,
+        app.bHeightMin*TETROMINO_BLOCK_SIZE,
         12*TETROMINO_BLOCK_SIZE,
         22*TETROMINO_BLOCK_SIZE
     };
@@ -413,8 +406,8 @@ void updateNextBlocks() {
 
 void displayNextBlocks() {
     SDL_FRect displayRect = {
-        (bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
-        (bHeightMin * TETROMINO_BLOCK_SIZE) + 150,
+        (app.bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
+        (app.bHeightMin * TETROMINO_BLOCK_SIZE) + 150,
         TETROMINO_BLOCK_SIZE << 2,
         (TETROMINO_BLOCK_SIZE << 3) + (TETROMINO_BLOCK_SIZE << 2)
     };
@@ -443,11 +436,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.width = 1000;
     app.height = 750;
 
-    bWidthMin = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
-    bWidthMax = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) + 5;
+    app.bWidthMin = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
+    app.bWidthMax = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) + 5;
 
-    bHeightMin = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) - 10;
-    bHeightMax = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) + 10;
+    app.bHeightMin = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) - 10;
+    app.bHeightMax = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) + 10;
 
     halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
@@ -536,7 +529,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         SDL_Log("Failed to load font app.globalFontS: %s", SDL_GetError());
     }
 
-    setupStaticText();
+    setupStaticText(&app);
 
     // -- texture setup --
     boardTexture = SDL_CreateTexture(
@@ -1369,12 +1362,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         }
         case SDL_EVENT_WINDOW_RESIZED: {
             SDL_GetWindowSize(app.window, &app.width, &app.height);
-            bWidthMin = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
-            bWidthMax = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) + 5;
+            app.bWidthMin = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
+            app.bWidthMax = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) + 5;
 
-            bHeightMin = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) - 10;
-            bHeightMax = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) + 10;
-            setupStaticText();
+            app.bHeightMin = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) - 10;
+            app.bHeightMax = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) + 10;
+            setupStaticText(&app);
 
             keyRect.x = (app.width >> 1) - ((int)keyW/2);
             keyRect.y = (app.height >> 1) - ((int)keyH/2) - 5;
@@ -1401,61 +1394,6 @@ void moveBoardDown(int remove) {
 }
 
 bool displayShift = true;
-
-void setupStaticText() {
-    //board sizes 
-    int widMinT = bWidthMin*TETROMINO_BLOCK_SIZE, widMaxT = bWidthMax*TETROMINO_BLOCK_SIZE;
-    int higMinT = bHeightMin*TETROMINO_BLOCK_SIZE, higMaxT = bHeightMax*TETROMINO_BLOCK_SIZE;
-
-    // Render text to a surface
-    SDL_Color textColor = {255, 255, 255, 255};
-    SDL_Surface* surface1 = TTF_RenderText_Blended(app.globalFont, "Tetris Time!", 12, textColor);
-    SDL_Surface* surface2  = TTF_RenderText_Blended(app.globalFont, "-Held-", 6, textColor);
-    SDL_Surface* surface3  = TTF_RenderText_Blended(app.globalFont, "-Score-", 7, textColor);
-    SDL_Surface* surface4  = TTF_RenderText_Blended(app.globalFont, "-Next Blocks-", 13, textColor);
-    if (!surface1 || !surface2 || !surface3) {
-        SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
-        return;
-    }
-
-    int textHeight = surface1->h;
-
-    SDL_Surface *combined = SDL_CreateSurface(widMaxT+60+surface4->w, higMinT+(textHeight*3)+60, SDL_PIXELFORMAT_RGBA32);
-
-    //setup destination rects
-    SDL_Rect dest1 = {(app.width >> 1) - (surface1->w >> 1) + 15, higMinT>>1, surface1->w, textHeight};
-    SDL_Rect dest2 = {widMinT-180, higMinT+20, surface2->w, textHeight};
-    SDL_Rect dest3 = {widMaxT+60, higMinT+20, surface3->w, textHeight};
-    SDL_Rect dest4 = {widMaxT+60, higMinT+(textHeight << 1)+60, surface4->w, textHeight};
-
-    //copy to combined
-    SDL_BlitSurface(surface1, NULL, combined, &dest1);
-    SDL_BlitSurface(surface2, NULL, combined, &dest2);
-    SDL_BlitSurface(surface3, NULL, combined, &dest3);
-    SDL_BlitSurface(surface4, NULL, combined, &dest4);
-
-    // Convert surface to texture
-    staticText = SDL_CreateTextureFromSurface(app.renderer, combined);
-    if (!staticText) {
-        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
-        return;
-    }
-
-    SDL_GetTextureSize(staticText, &textW, &textH);
-
-    //destroy
-    SDL_DestroySurface(surface1);
-    SDL_DestroySurface(surface2);
-    SDL_DestroySurface(surface3);
-    SDL_DestroySurface(surface4);
-    SDL_DestroySurface(combined);
-}
-
-void displayStaticTexture() {
-    // Get text dimensions
-    SDL_FRect textRect = {0, 0, textW, textH};
-    SDL_RenderTexture(app.renderer, staticText, NULL, &textRect);
-}
 
 int posX = 0, posY = 0;
 int currentMove = 0, currentColour = 1;
@@ -1534,7 +1472,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             lastPress = 0;
         }
     } else if (winning) { 
-        displayStaticTexture();
+        displayStaticText(&app);
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
         if (firstRun == true) {
             updateNextBlocks(); 
@@ -1542,7 +1480,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             currentTet = tetArray[currentBlock];
             runWireframes(&currentTet);
         }
-        displayText(&app, scoreString, (bWidthMax*TETROMINO_BLOCK_SIZE)+60, (bHeightMin*TETROMINO_BLOCK_SIZE)+49, app.globalFont, 255, 255, 255);
+        displayText(&app, scoreString, (app.bWidthMax*TETROMINO_BLOCK_SIZE)+60, (app.bHeightMin*TETROMINO_BLOCK_SIZE)+49, app.globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
         char incompleteScore[7];
 
@@ -1666,8 +1604,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     posX = currentTet.x + x;
                     posY = currentTet.y + y;
                     SDL_FRect Brect = {
-                        (posX + bWidthMin) * TETROMINO_BLOCK_SIZE,
-                        (posY + bHeightMin) * TETROMINO_BLOCK_SIZE,
+                        (posX + app.bWidthMin) * TETROMINO_BLOCK_SIZE,
+                        (posY + app.bHeightMin) * TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
@@ -1676,8 +1614,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
 
-        int baseX = (bWidthMin*TETROMINO_BLOCK_SIZE)-180 + (TETROMINO_BLOCK_SIZE << 1);
-        int baseY = (bHeightMin*TETROMINO_BLOCK_SIZE)+70;
+        int baseX = (app.bWidthMin*TETROMINO_BLOCK_SIZE)-180 + (TETROMINO_BLOCK_SIZE << 1);
+        int baseY = (app.bHeightMin*TETROMINO_BLOCK_SIZE)+70;
 
         //display held tetromino
         if (heldtet != -1) {
@@ -1714,7 +1652,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     /* SDL will clean up the window/renderer for us. */
     SDL_DestroyTexture(boardTexture);
-    SDL_DestroyTexture(staticText);
+    SDL_DestroyTexture(app.staticText);
     SDL_DestroyTexture(keyboard);
     SDL_DestroyTexture(app.keyboardText);
     TTF_CloseFont(app.globalFont);

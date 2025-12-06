@@ -102,3 +102,58 @@ void writeToKeyboardText(appContext *app, char mainStr[], char subStr[], bool wr
 
     SDL_SetRenderTarget(app->renderer, NULL);
 }
+
+void setupStaticText(appContext *app) {
+    //board sizes 
+    int widMinT = app->bWidthMin*TETROMINO_BLOCK_SIZE, widMaxT = app->bWidthMax*TETROMINO_BLOCK_SIZE;
+    int higMinT = app->bHeightMin*TETROMINO_BLOCK_SIZE, higMaxT = app->bHeightMax*TETROMINO_BLOCK_SIZE;
+
+    // Render text to a surface
+    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Surface* surface1 = TTF_RenderText_Blended(app->globalFont, "Tetris Time!", 12, textColor);
+    SDL_Surface* surface2  = TTF_RenderText_Blended(app->globalFont, "-Held-", 6, textColor);
+    SDL_Surface* surface3  = TTF_RenderText_Blended(app->globalFont, "-Score-", 7, textColor);
+    SDL_Surface* surface4  = TTF_RenderText_Blended(app->globalFont, "-Next Blocks-", 13, textColor);
+    if (!surface1 || !surface2 || !surface3) {
+        SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
+        return;
+    }
+
+    int textHeight = surface1->h;
+
+    SDL_Surface *combined = SDL_CreateSurface(widMaxT+60+surface4->w, higMinT+(textHeight*3)+60, SDL_PIXELFORMAT_RGBA32);
+
+    //setup destination rects
+    SDL_Rect dest1 = {(app->width >> 1) - (surface1->w >> 1) + 15, higMinT>>1, surface1->w, textHeight};
+    SDL_Rect dest2 = {widMinT-180, higMinT+20, surface2->w, textHeight};
+    SDL_Rect dest3 = {widMaxT+60, higMinT+20, surface3->w, textHeight};
+    SDL_Rect dest4 = {widMaxT+60, higMinT+(textHeight << 1)+60, surface4->w, textHeight};
+
+    //copy to combined
+    SDL_BlitSurface(surface1, NULL, combined, &dest1);
+    SDL_BlitSurface(surface2, NULL, combined, &dest2);
+    SDL_BlitSurface(surface3, NULL, combined, &dest3);
+    SDL_BlitSurface(surface4, NULL, combined, &dest4);
+
+    // Convert surface to texture
+    app->staticText = SDL_CreateTextureFromSurface(app->renderer, combined);
+    if (!app->staticText) {
+        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_GetTextureSize(app->staticText, &app->textW, &app->textH);
+
+    //destroy
+    SDL_DestroySurface(surface1);
+    SDL_DestroySurface(surface2);
+    SDL_DestroySurface(surface3);
+    SDL_DestroySurface(surface4);
+    SDL_DestroySurface(combined);
+}
+
+void displayStaticText(appContext *app) {
+    // Get text dimensions
+    SDL_FRect textRect = {0, 0, app->textW, app->textH};
+    SDL_RenderTexture(app->renderer, app->staticText, NULL, &textRect);
+}
