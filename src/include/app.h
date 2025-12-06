@@ -1,5 +1,5 @@
-#ifndef APP_CONTEXT_H
-#define APP_CONTEXT_H
+#ifndef APP_H
+#define APP_H
 
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL_render.h>
@@ -49,9 +49,12 @@ typedef struct {
     SDL_Texture *keyboardText;
 
     SDL_Texture *staticText;
+    SDL_Texture *backgroundKeyboard;
 
     TTF_Font* globalFont;
     TTF_Font* globalFontS;
 } appContext;
+
+void prependChar(char *str, char c);
 
 #endif

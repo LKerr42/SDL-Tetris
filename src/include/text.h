@@ -2,7 +2,7 @@
 #define TEXT_H
 
 #include <SDL3_ttf/SDL_ttf.h>
-#include "app_context.h"
+#include "app.h"
 
 /**
  * Displays a string to the board with the specified params

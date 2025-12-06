@@ -1,5 +1,5 @@
 #include "include/text.h"
-#include "include/app_context.h"
+#include "include/app.h"
 
 void displayText(appContext *app, char str[], int x, int y, TTF_Font* font, int r, int g, int b) {
     // Render text to a surface

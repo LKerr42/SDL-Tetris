@@ -6,11 +6,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h> 
 
-#include "include/app_context.h"
+#include "include/app.h"
 #include "include/audio.h"
 #include "include/text.h"
+#include "include/keyboard.h"
 
 #define CLEAR     0 
 #define HOLYMOLY  1
@@ -94,14 +94,6 @@ void setColourDef(colours *data, int R, int G, int B) {
     data -> r = R;
     data -> g = G;
     data -> b = B;
-}
-
-void prependChar(char *str, char c) {
-    size_t len = strlen(str);
-
-    memmove(str + 1, str, len + 1);
-
-    str[0] = c;
 }
 
 int shapes[7][4][4] = {
@@ -243,7 +235,6 @@ SDL_Texture *keyboard;
 SDL_Surface *keyboardSurface;
 SDL_FRect keyRect;
 
-SDL_Texture *backgroundKeyboard;
 SDL_FRect keyboardTextRect;
 
 void displayBlock(SDL_FRect rect, int r, int g, int b) {
@@ -556,13 +547,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
     }
 
-    backgroundKeyboard  = SDL_CreateTexture(
+    app.backgroundKeyboard  = SDL_CreateTexture(
         app.renderer,
         SDL_PIXELFORMAT_RGBA32,
         SDL_TEXTUREACCESS_TARGET,
         intKeyW, intKeyH
     );
-    if (!backgroundKeyboard) {
+    if (!app.backgroundKeyboard) {
         printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
     }
 
@@ -572,7 +563,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         SDL_TEXTUREACCESS_TARGET,
         intKeyW, 100
     );
-    if (!backgroundKeyboard) {
+    if (!app.keyboardText) {
         printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
     }
 
@@ -797,27 +788,6 @@ void runWireframes(tetromino *copyTet) {
     }
 }
 
-void addKeyboardRects(int x, int y, int w, int h, bool down) {
-    SDL_SetRenderTarget(app.renderer, backgroundKeyboard);
-
-    SDL_FRect rect = {
-        x * KEYBOARD_PIXEL_SIZE,
-        y * KEYBOARD_PIXEL_SIZE, //x and y
-        w * KEYBOARD_PIXEL_SIZE, 
-        h * KEYBOARD_PIXEL_SIZE, //w and h
-    };
-
-    if (down) {
-        SDL_SetRenderDrawColor(app.renderer, 255, 53, 38, SDL_ALPHA_OPAQUE); 
-    } else {
-        SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE); 
-    }
-
-    SDL_RenderFillRect(app.renderer, &rect);
-
-    SDL_SetRenderTarget(app.renderer, NULL);
-}
-
 Uint8 amountPressedDown = 0;
 
 void handleKeyboardInput(SDL_Scancode code) {
@@ -932,280 +902,280 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
         // -- letters --
         case SDL_SCANCODE_Q: {
             writeToKeyboardText(&app, "-Q-", "", pressing, SDL_SCANCODE_Q);
-            addKeyboardRects(7, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 7, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_W: {
             writeToKeyboardText(&app, "-W-", "", pressing, SDL_SCANCODE_W);
-            addKeyboardRects(13, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 13, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_E: {
             writeToKeyboardText(&app, "-E-", "", pressing, SDL_SCANCODE_E);
-            addKeyboardRects(19, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 19, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_R: {
             writeToKeyboardText(&app, "-R-", "", pressing, SDL_SCANCODE_R);
-            addKeyboardRects(25, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 25, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_T: {
             writeToKeyboardText(&app, "-T-", "", pressing, SDL_SCANCODE_T);
-            addKeyboardRects(31, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 31, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_Y: {
             writeToKeyboardText(&app, "-Y-", "", pressing, SDL_SCANCODE_Y);
-            addKeyboardRects(37, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 37, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_U: {
             writeToKeyboardText(&app, "-U-", "", pressing, SDL_SCANCODE_U);
-            addKeyboardRects(43, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 43, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_I: {
             writeToKeyboardText(&app, "-I-", "", pressing, SDL_SCANCODE_I);
-            addKeyboardRects(49, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 49, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_O: {
             writeToKeyboardText(&app, "-O-", "", pressing, SDL_SCANCODE_O);
-            addKeyboardRects(55, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 55, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_P: { //TODO: add pause function
             writeToKeyboardText(&app, "-P-", "", pressing, SDL_SCANCODE_P);
-            addKeyboardRects(61, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 61, 9, 5, 7, pressing);
             break;
         }
 
         case SDL_SCANCODE_A: {
             writeToKeyboardText(&app, "-A-", "Tap to spin block counter-clockwise", pressing, SDL_SCANCODE_A);
-            addKeyboardRects(9, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 9, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_S: {
             writeToKeyboardText(&app, "-S-", "", pressing, SDL_SCANCODE_S);
-            addKeyboardRects(15, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 15, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_D: {
             writeToKeyboardText(&app, "-D-", "Tap to spin block clockwise", pressing, SDL_SCANCODE_D);
-            addKeyboardRects(21, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 21, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_F: {
             writeToKeyboardText(&app, "-F-", "", pressing, SDL_SCANCODE_F);
-            addKeyboardRects(27, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 27, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_G: {
             writeToKeyboardText(&app, "-G-", "", pressing, SDL_SCANCODE_G);
-            addKeyboardRects(33, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 33, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_H: {
             writeToKeyboardText(&app, "-H-", "Its a surprise :)", pressing, SDL_SCANCODE_H);
-            addKeyboardRects(39, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 39, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_J: {
             writeToKeyboardText(&app, "-J-", "", pressing, SDL_SCANCODE_J);
-            addKeyboardRects(45, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 45, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_K: {
             writeToKeyboardText(&app, "-K-", "", pressing, SDL_SCANCODE_K);
-            addKeyboardRects(51, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 51, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_L: {
             writeToKeyboardText(&app, "-L-", "", pressing, SDL_SCANCODE_L);
-            addKeyboardRects(57, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 57, 15, 5, 7, pressing);
             break;
         }
 
         case SDL_SCANCODE_Z: {
             writeToKeyboardText(&app, "-Z-", "", pressing, SDL_SCANCODE_Z);
-            addKeyboardRects(12, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 12, 21, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_X: {
             writeToKeyboardText(&app, "-X-", "", pressing, SDL_SCANCODE_X);
-            addKeyboardRects(18, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 18, 21, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_C: {
             writeToKeyboardText(&app, "-C-", "", pressing, SDL_SCANCODE_C);
-            addKeyboardRects(24, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 24, 21, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_V: {
             writeToKeyboardText(&app, "-V-", "", pressing, SDL_SCANCODE_V);
-            addKeyboardRects(30, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 30, 21, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_B: {
             writeToKeyboardText(&app, "-B-", "", pressing, SDL_SCANCODE_B);
-            addKeyboardRects(36, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 36, 21, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_N: {
             writeToKeyboardText(&app, "-N-", "", pressing, SDL_SCANCODE_N);
-            addKeyboardRects(42, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 42, 21, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_M: {
             writeToKeyboardText(&app, "-M-", "", pressing, SDL_SCANCODE_M);
-            addKeyboardRects(48, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 48, 21, 5, 7, pressing);
             break;
         }
 
         // -- numbers --
         case SDL_SCANCODE_1: {  
             writeToKeyboardText(&app, "-1-", "", pressing, SDL_SCANCODE_1);
-            addKeyboardRects(5, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 5, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_2: {
             writeToKeyboardText(&app, "-2-", "", pressing, SDL_SCANCODE_2);
-            addKeyboardRects(11, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 11, 3, 5, 7, pressing);
             break;  
         }
         case SDL_SCANCODE_3: {
             writeToKeyboardText(&app, "-3-", "", pressing, SDL_SCANCODE_3);
-            addKeyboardRects(17, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 17, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_4: {
             writeToKeyboardText(&app, "-4-", "", pressing, SDL_SCANCODE_4);
-            addKeyboardRects(23, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 23, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_5: {
             writeToKeyboardText(&app, "-5-", "", pressing, SDL_SCANCODE_5);
-            addKeyboardRects(29, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 29, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_6: {
             writeToKeyboardText(&app, "-6-", "", pressing, SDL_SCANCODE_6);
-            addKeyboardRects(35, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 35, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_7: {
             writeToKeyboardText(&app, "-7-", "", pressing, SDL_SCANCODE_7);            
-            addKeyboardRects(41, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 41, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_8: {
             writeToKeyboardText(&app, "-8-", "", pressing, SDL_SCANCODE_8);
-            addKeyboardRects(47, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 47, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_9: {
             writeToKeyboardText(&app, "-9-", "", pressing, SDL_SCANCODE_9);
-            addKeyboardRects(53, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 53, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_0: {
             writeToKeyboardText(&app, "-0-", "", pressing, SDL_SCANCODE_0);
-            addKeyboardRects(59, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 59, 3, 5, 7, pressing);
             break;
         }
         
         // -- top row --
         case SDL_SCANCODE_ESCAPE: {
             writeToKeyboardText(&app, "-Esc-", "", pressing, SDL_SCANCODE_ESCAPE);
-            addKeyboardRects(1, 1, 6, 3, pressing);
+            addKeyboardRects(&app, 1, 1, 6, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F1: {
             writeToKeyboardText(&app, "-F1-", "", pressing, SDL_SCANCODE_F1);
-            addKeyboardRects(8, 1, 4, 3, pressing);
+            addKeyboardRects(&app, 8, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F2: {
             writeToKeyboardText(&app, "-F2-", "", pressing, SDL_SCANCODE_F2);
-            addKeyboardRects(13, 1, 5, 3, pressing);
+            addKeyboardRects(&app, 13, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F3: {
             writeToKeyboardText(&app, "-F3-", "", pressing, SDL_SCANCODE_F3);
-            addKeyboardRects(19, 1, 4, 3, pressing);
+            addKeyboardRects(&app, 19, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F4: {
             writeToKeyboardText(&app, "-F4-", "", pressing, SDL_SCANCODE_F4);
-            addKeyboardRects(24, 1, 5, 3, pressing);
+            addKeyboardRects(&app, 24, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F5: {
             writeToKeyboardText(&app, "-F5-", "", pressing, SDL_SCANCODE_F5);
-            addKeyboardRects(30, 1, 4, 3, pressing);
+            addKeyboardRects(&app, 30, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F6: {
             writeToKeyboardText(&app, "-F6-", "", pressing, SDL_SCANCODE_F6);
-            addKeyboardRects(35, 1, 5, 3, pressing);
+            addKeyboardRects(&app, 35, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F7: {
             writeToKeyboardText(&app, "-F7-", "", pressing, SDL_SCANCODE_F7);
-            addKeyboardRects(41, 1, 4, 3, pressing);
+            addKeyboardRects(&app, 41, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F8: {
             writeToKeyboardText(&app, "-F8-", "", pressing, SDL_SCANCODE_F8);
-            addKeyboardRects(46, 1, 5, 3, pressing);
+            addKeyboardRects(&app, 46, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F9: {
             writeToKeyboardText(&app, "-F9-", "", pressing, SDL_SCANCODE_F9);
-            addKeyboardRects(52, 1, 4, 3, pressing);
+            addKeyboardRects(&app, 52, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F10: {
             writeToKeyboardText(&app, "-F10-", "", pressing, SDL_SCANCODE_F10);
-            addKeyboardRects(57, 1, 5, 3, pressing);
+            addKeyboardRects(&app, 57, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F11: {
             writeToKeyboardText(&app, "-F11-", "", pressing, SDL_SCANCODE_F11);
-            addKeyboardRects(63, 1, 4, 3, pressing);
+            addKeyboardRects(&app, 63, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F12: {
             writeToKeyboardText(&app, "-F12-", "", pressing, SDL_SCANCODE_F12);
-            addKeyboardRects(68, 1, 5, 3, pressing);
+            addKeyboardRects(&app, 68, 1, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_DELETE: {
             writeToKeyboardText(&app, "-Del-", "", pressing, SDL_SCANCODE_DELETE);
-            addKeyboardRects(79, 1, 6, 3, pressing);
+            addKeyboardRects(&app, 79, 1, 6, 3, pressing);
             break;
         }
 
         // --  bottom row --
         case SDL_SCANCODE_LCTRL: {
             writeToKeyboardText(&app, "-L Ctrl-", "", pressing, SDL_SCANCODE_LCTRL);
-            addKeyboardRects(1, 27, 6, 6, pressing);
+            addKeyboardRects(&app, 1, 27, 6, 6, pressing);
             break;
         }
         case SDL_SCANCODE_LGUI: {
             writeToKeyboardText(&app, "-Wnd-", "", pressing, SDL_SCANCODE_LGUI);
-            addKeyboardRects(14, 27, 5, 6, pressing);
+            addKeyboardRects(&app, 14, 27, 5, 6, pressing);
             break;
         }
         case SDL_SCANCODE_LALT: {
             writeToKeyboardText(&app, "-L Alt-", "Tap to show/hide wireframes", pressing, SDL_SCANCODE_LALT);
-            addKeyboardRects(20, 27, 5, 6, pressing);
+            addKeyboardRects(&app, 20, 27, 5, 6, pressing);
             break;
         }
         case SDL_SCANCODE_SPACE: {
             writeToKeyboardText(&app, "-Space-", "Tap to swap blocks, double tap to start game", pressing, SDL_SCANCODE_SPACE);
-            addKeyboardRects(26, 27, 29, 6, pressing);
+            addKeyboardRects(&app, 26, 27, 29, 6, pressing);
 
             if (!pressing) {
                 amountPressed += 1;
@@ -1214,124 +1184,124 @@ void handleInputKeyboardCard(SDL_Scancode code, bool pressing) {
         }
         case SDL_SCANCODE_RALT: {
             writeToKeyboardText(&app, "-R Alt-", "Tap to show/hide wireframes", pressing, SDL_SCANCODE_RALT);
-            addKeyboardRects(56, 27, 5, 6, pressing);
+            addKeyboardRects(&app, 56, 27, 5, 6, pressing);
             break;
         }
         case SDL_SCANCODE_APPLICATION: {
             writeToKeyboardText(&app, "-App-", "", pressing, SDL_SCANCODE_APPLICATION);
-            addKeyboardRects(62, 27, 5, 6, pressing);
+            addKeyboardRects(&app, 62, 27, 5, 6, pressing);
             break;
         }
         case SDL_SCANCODE_LEFT: {
             writeToKeyboardText(&app, "-Left-", "Tap to move block left", pressing, SDL_SCANCODE_LEFT);
-            addKeyboardRects(68, 28, 6, 5, pressing);
+            addKeyboardRects(&app, 68, 28, 6, 5, pressing);
             break;
         }
         case SDL_SCANCODE_UP: {
             writeToKeyboardText(&app, "-Up-", "", pressing, SDL_SCANCODE_UP);
-            addKeyboardRects(74, 27, 5, 3, pressing);
+            addKeyboardRects(&app, 74, 27, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_DOWN: {
             writeToKeyboardText(&app, "-Down-", "Tap to move block down, double tap for auto place", pressing, SDL_SCANCODE_DOWN);
-            addKeyboardRects(74, 30, 5, 3, pressing);
+            addKeyboardRects(&app, 74, 30, 5, 3, pressing);
             break;
         }
         case SDL_SCANCODE_RIGHT: {
             writeToKeyboardText(&app, "-Right-", "Tap to move block right", pressing, SDL_SCANCODE_RIGHT);
-            addKeyboardRects(79, 28, 6, 5, pressing);
+            addKeyboardRects(&app, 79, 28, 6, 5, pressing);
             break;
         }
 
         // -- left side --
         case SDL_SCANCODE_GRAVE: {
             writeToKeyboardText(&app, "-Grave-", "", pressing, SDL_SCANCODE_GRAVE);
-            addKeyboardRects(1, 4, 3, 5, pressing);
+            addKeyboardRects(&app, 1, 4, 3, 5, pressing);
             break;
         }
         case SDL_SCANCODE_TAB: {
              writeToKeyboardText(&app, "-Tab-", "", pressing, SDL_SCANCODE_TAB);
-            addKeyboardRects(1, 9, 5, 6, pressing);
+            addKeyboardRects(&app, 1, 9, 5, 6, pressing);
             break;
         }
         case SDL_SCANCODE_CAPSLOCK: {
              writeToKeyboardText(&app, "-Caps-", "", pressing, SDL_SCANCODE_CAPSLOCK);
-            addKeyboardRects(1, 15, 7, 6, pressing);
+            addKeyboardRects(&app, 1, 15, 7, 6, pressing);
             break;
         }
         case SDL_SCANCODE_LSHIFT: {
              writeToKeyboardText(&app, "-L Shift-", "", pressing, SDL_SCANCODE_LSHIFT);
-            addKeyboardRects(1, 21, 10, 7, pressing);
+            addKeyboardRects(&app, 1, 21, 10, 7, pressing);
             break;
         }
 
         // -- right side --
         case SDL_SCANCODE_MINUS: {
             writeToKeyboardText(&app, "-Minus-", "", pressing, SDL_SCANCODE_MINUS);
-            addKeyboardRects(65, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 65, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_EQUALS: {
             writeToKeyboardText(&app, "-Equals-", "", pressing, SDL_SCANCODE_EQUALS);
-            addKeyboardRects(71, 3, 5, 7, pressing);
+            addKeyboardRects(&app, 71, 3, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_BACKSPACE: {
             writeToKeyboardText(&app, "-Backspace-", "", pressing, SDL_SCANCODE_BACKSPACE);
-            addKeyboardRects(77, 3, 8, 7, pressing);
+            addKeyboardRects(&app, 77, 3, 8, 7, pressing);
             break;
         }
 
         case SDL_SCANCODE_LEFTBRACKET: { //six-seven???
             writeToKeyboardText(&app, "-L Bracket-", "", pressing, SDL_SCANCODE_LEFTBRACKET);
-            addKeyboardRects(67, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 67, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_RIGHTBRACKET: {
             writeToKeyboardText(&app, "-R Bracket-", "", pressing, SDL_SCANCODE_RIGHTBRACKET);
-            addKeyboardRects(73, 9, 5, 7, pressing);
+            addKeyboardRects(&app, 73, 9, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_BACKSLASH: {
             writeToKeyboardText(&app, "-Backslash-", "", pressing, SDL_SCANCODE_BACKSLASH);
-            addKeyboardRects(79, 9, 6, 7, pressing);
+            addKeyboardRects(&app, 79, 9, 6, 7, pressing);
             break;
         }
 
         case SDL_SCANCODE_SEMICOLON: {
             writeToKeyboardText(&app, "-Semicolon-", "", pressing, SDL_SCANCODE_SEMICOLON);
-            addKeyboardRects(63, 15, 5, 7, pressing);
+            addKeyboardRects(&app, 63, 15, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_APOSTROPHE: { //six-nine???
             writeToKeyboardText(&app, "-Apostrophe-", "", pressing, SDL_SCANCODE_APOSTROPHE);
-            addKeyboardRects(69, 15, 6, 7, pressing);
+            addKeyboardRects(&app, 69, 15, 6, 7, pressing);
             break;
         }
         case SDL_SCANCODE_RETURN: {
             writeToKeyboardText(&app, "-Enter-", "", pressing, SDL_SCANCODE_RETURN);
-            addKeyboardRects(76, 15, 9, 7, pressing);
+            addKeyboardRects(&app, 76, 15, 9, 7, pressing);
             break;
         }
     
         case SDL_SCANCODE_COMMA: {
             writeToKeyboardText(&app, "-Comma-", "", pressing, SDL_SCANCODE_COMMA);
-            addKeyboardRects(54, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 54, 21, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_PERIOD: {
             writeToKeyboardText(&app, "-Period-", "", pressing, SDL_SCANCODE_PERIOD);
-            addKeyboardRects(60, 21, 5, 7, pressing);
+            addKeyboardRects(&app, 60, 21, 5, 7, pressing);
             break;
         }
         case SDL_SCANCODE_SLASH: {
             writeToKeyboardText(&app, "-Slash-", "", pressing, SDL_SCANCODE_SLASH);
-            addKeyboardRects(66, 21, 6, 7, pressing);
+            addKeyboardRects(&app, 66, 21, 6, 7, pressing);
             break;
         }
         case SDL_SCANCODE_RSHIFT: {
             writeToKeyboardText(&app, "-R Shift-", "", pressing, SDL_SCANCODE_RSHIFT);
-            addKeyboardRects(73, 21, 12, 7, pressing);
+            addKeyboardRects(&app, 73, 21, 12, 7, pressing);
             break;
         }
     }
@@ -1455,7 +1425,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         }
     } else if (keyboardCard) {
         SDL_RenderTexture(app.renderer, app.keyboardText, NULL, &keyboardTextRect);
-        SDL_RenderTexture(app.renderer, backgroundKeyboard, NULL, &keyRect);
+        SDL_RenderTexture(app.renderer, app.backgroundKeyboard, NULL, &keyRect);
         SDL_RenderTexture(app.renderer, keyboard, NULL, &keyRect);
         if (amountPressed == 1) {
             lastPress++;
