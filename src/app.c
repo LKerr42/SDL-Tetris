@@ -1,4 +1,5 @@
 #include <string.h>
+#include "include/app.h"
 
 void prependChar(char *str, char c) {
     size_t len = strlen(str);

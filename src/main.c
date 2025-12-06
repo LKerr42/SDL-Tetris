@@ -31,33 +31,8 @@ setBlocks filledBlocks[22][12];
 tetromino titleTetroes[6];
 tetromino wireframeTet;
 
-typedef struct {
-    int r;
-    int g;
-    int b;
-} colours;
-colours colour[7];
-
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
-
-void setBlockColour(blockStruct *block, int R, int G, int B) {
-    block -> r = R;
-    block -> g = G;
-    block -> b = B;
-}
-
-void setTetColour(tetromino *object, int R, int G, int B) {
-    object -> r = R;
-    object -> g = G;
-    object -> b = B;
-}
-
-void setColourDef(colours *data, int R, int G, int B) {
-    data -> r = R;
-    data -> g = G;
-    data -> b = B;
-}
 
 int shapes[7][4][4] = {
     //Long boy
@@ -806,8 +781,6 @@ void moveBoardDown(int remove) {
         }
     }
 }
-
-bool displayShift = true;
 
 int posX = 0, posY = 0;
 int currentMove = 0, currentColour = 1;
