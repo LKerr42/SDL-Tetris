@@ -28,142 +28,7 @@ typedef struct {
 } setBlocks;
 setBlocks filledBlocks[22][12];
 
-tetromino titleTetroes[6];
 tetromino wireframeTet;
-
-void rotateTetrominoCCW(tetromino *t);
-void rotateTetrominoCW(tetromino *t);
-
-int shapes[7][4][4] = {
-    //Long boy
-    {{0, 0, 0, 0}, 
-     {1, 1, 1, 1},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-    //Left L
-    {{1, 0, 0, 0},
-     {1, 1, 1, 0},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-    //Right L
-    {{0, 0, 1, 0},
-     {1, 1, 1, 0},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-    //Square
-    {{1, 1, 0, 0},
-     {1, 1, 0, 0},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-    //Right squiggle
-    {{0, 1, 1, 0},
-     {1, 1, 0, 0},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-    //T boy
-    {{0, 1, 0, 0},
-     {1, 1, 1, 0},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-    //Left squiggle
-    {{1, 1, 0, 0},
-     {0, 1, 1, 0},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-};
-
-void setupTetrominos() {
-    setTetColour(&app.tetArray[0], 0, 255, 255); //Long boy
-    setTetColour(&app.tetArray[1], 0, 0, 255);   //Left L
-    setTetColour(&app.tetArray[2], 255, 160, 0); //Right L
-    setTetColour(&app.tetArray[3], 255, 255, 0); //Square 
-    setTetColour(&app.tetArray[4], 0, 255, 0);   //Right squiggle
-    setTetColour(&app.tetArray[5], 150, 0, 255); //T boy
-    setTetColour(&app.tetArray[6], 255, 0, 0);   //Left squiggle
-
-    for (int count = 0; count < 7; count++) {
-        for (int y = 0; y < 4; y++) {
-            for (int x = 0; x < 4; x++) {
-                app.tetArray[count].blocks[y][x].x = x;
-                app.tetArray[count].blocks[y][x].y = y;
-
-                if (shapes[count][y][x] == 1) {
-                    app.tetArray[count].blocks[y][x].active = true;
-                    setBlockColour(&app.tetArray[count].blocks[y][x], app.tetArray[count].r, app.tetArray[count].g, app.tetArray[count].b);
-                } else {
-                    app.tetArray[count].blocks[y][x].active = false;
-                }
-
-            }
-        }
-        app.tetArray[count].x = 4;
-        app.tetArray[count].y = 1;
-    }
-}
-
-void setupTitleBlocks() {
-    int letters[6][5][4] = {
-        //T
-        {{1, 1, 1, 0}, 
-         {0, 1, 0, 0},
-         {0, 1, 0, 0},
-         {0, 1, 0, 0},
-         {0, 1, 0, 0}},
-        //E
-        {{1, 1, 1, 0}, 
-         {1, 0, 0, 0},
-         {1, 1, 0, 0},
-         {1, 0, 0, 0},
-         {1, 1, 1, 0}},
-        //T
-        {{1, 1, 1, 0}, 
-         {0, 1, 0, 0},
-         {0, 1, 0, 0},
-         {0, 1, 0, 0},
-         {0, 1, 0, 0}},
-        //R
-        {{1, 1, 1, 0}, 
-         {1, 0, 0, 1},
-         {1, 1, 1, 0},
-         {1, 0, 1, 0},
-         {1, 0, 0, 1}},
-        //I
-        {{1, 1, 1, 0}, 
-         {0, 1, 0, 0},
-         {0, 1, 0, 0},
-         {0, 1, 0, 0},
-         {1, 1, 1, 0}},
-        //S
-        {{0, 1, 1, 1}, 
-         {1, 0, 0, 0},
-         {0, 1, 1, 0},
-         {0, 0, 0, 1},
-         {1, 1, 1, 0}},
-    };
-
-    for (int count = 0; count < 6; count++) {
-        setTetColour(&titleTetroes[count], 0, 0, 255);
-
-        for (int Y = 0; Y < 5; Y++) {
-            for (int X = 0; X < 4; X++) {
-                titleTetroes[count].titleBlocks[Y][X].x = X;
-                titleTetroes[count].titleBlocks[Y][X].y = Y;
-
-                if (letters[count][Y][X] == 1) {
-                    titleTetroes[count].titleBlocks[Y][X].active = true;
-                    setBlockColour(&titleTetroes[count].titleBlocks[Y][X], titleTetroes[count].r, titleTetroes[count].g, titleTetroes[count].b);
-                } else {
-                    titleTetroes[count].titleBlocks[Y][X].active = false;
-                }
-                
-
-            }
-        }
-        titleTetroes[count].x = (TETROMINO_BLOCK_SIZE << 2) * count;
-        if (count == 4 || count == 5) titleTetroes[count].x += TETROMINO_BLOCK_SIZE;
-        titleTetroes[count].y = 0;
-    }
-}
 
 SDL_Texture *boardTexture;
 SDL_Texture *nextTexture;
@@ -315,7 +180,7 @@ void updateNextBlocks() {
     for (int block = 0; block < 4; block++) {
         for (int d = 0; d < 4; d++) {
             for (int e = 0; e < 4; e++) {
-                if (shapes[app.nextBlocks[block]][d][e] == 1) {
+                if (app.tetArray[app.nextBlocks[block]]->blocks[d][e].active == true) {
                     posX = e * TETROMINO_BLOCK_SIZE;
                     posY = d * TETROMINO_BLOCK_SIZE + ((TETROMINO_BLOCK_SIZE*3) * block);
                     SDL_FRect Nrect = {
@@ -324,7 +189,7 @@ void updateNextBlocks() {
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlockToTexture(Nrect, app.tetArray[app.nextBlocks[block]].r, app.tetArray[app.nextBlocks[block]].g, app.tetArray[app.nextBlocks[block]].b, nextTexture, false);
+                    displayBlockToTexture(Nrect, app.tetArray[app.nextBlocks[block]]->r, app.tetArray[app.nextBlocks[block]]->g, app.tetArray[app.nextBlocks[block]]->b, nextTexture, false);
                 }
             }
         }
@@ -366,6 +231,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.height = 750;
     app.titleCard = true;
     app.showWireframe = true;
+    app.heldtet = -1;
 
     app.bWidthMin = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) - 5;
     app.bWidthMax = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) + 5;
@@ -376,8 +242,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
 
-    setupTetrominos();
-    setupTitleBlocks();
+    printf("Setting up Tetrominoes\n");
+    setupTetrominos(&app);
+    printf("Setting up title blocks\n");
+    setupTitleBlocks(&app);
 
     setColourDef(&colour[0], 0, 0, 255); //blue
     setColourDef(&colour[1], 0, 255, 255); //turquoise
@@ -706,8 +574,8 @@ void resetGame() {
     score = 0;
     app.heldtet = -1;
     app.currentBlock = 0;
-    app.currentTet.x = 4;
-    app.currentTet.y = 1;
+    app.currentTet->x = 4;
+    app.currentTet->y = 1;
     app.winning = true;
     firstRun = true;
 }
@@ -810,9 +678,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 if (currentColour == 7) currentColour = 0;
             }
 
-            titleTetroes[currentMove].r = colour[currentColour].r;
-            titleTetroes[currentMove].g = colour[currentColour].g;
-            titleTetroes[currentMove].b = colour[currentColour].b;
+            app.titleTetroes[currentMove]->r = colour[currentColour].r;
+            app.titleTetroes[currentMove]->g = colour[currentColour].g;
+            app.titleTetroes[currentMove]->b = colour[currentColour].b;
 
             currentMove++;
             lastChange = now;
@@ -825,9 +693,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         for (int countB = 0; countB < 6; countB++) {
             for (int Y = 0; Y < 5; Y++) {
                 for (int X = 0; X < 4; X++) {
-                    if (titleTetroes[countB].titleBlocks[Y][X].active == true) {
-                        posX = titleTetroes[countB].x + (X * TETROMINO_BLOCK_SIZE) + halfTitleWidth;
-                        posY = titleTetroes[countB].y + (Y* TETROMINO_BLOCK_SIZE) + halfTitleHeight;
+                    if (app.titleTetroes[countB]->titleBlocks[Y][X].active == true) {
+                        posX = app.titleTetroes[countB]->x + (X * TETROMINO_BLOCK_SIZE) + halfTitleWidth;
+                        posY = app.titleTetroes[countB]->y + (Y* TETROMINO_BLOCK_SIZE) + halfTitleHeight;
 
                         SDL_FRect Trect = {
                             posX,
@@ -835,7 +703,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Trect, titleTetroes[countB].r, titleTetroes[countB].g, titleTetroes[countB].b);
+                        displayBlock(Trect, app.titleTetroes[countB]->r, app.titleTetroes[countB]->g, app.titleTetroes[countB]->b);
                     }
                 }
             }
@@ -864,8 +732,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         if (firstRun == true) {
             updateNextBlocks(); 
             firstRun = false;
-            app.currentTet = app.tetArray[app.currentBlock];
-            runWireframes(&app.currentTet);
+            *app.currentTet = *app.tetArray[app.currentBlock];
+            runWireframes(app.currentTet);
         }
         displayText(&app, scoreString, (app.bWidthMax*TETROMINO_BLOCK_SIZE)+60, (app.bHeightMin*TETROMINO_BLOCK_SIZE)+49, app.globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
@@ -875,8 +743,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             lastPressDown++;
         } else if (app.amountPressedDown == 2) {
             while (true) {
-                if (canMove(&app.currentTet, 0, 1)) {
-                    app.currentTet.y += 1;
+                if (canMove(app.currentTet, 0, 1)) {
+                    app.currentTet->y += 1;
                 } else {
                     break;
                 }
@@ -892,21 +760,21 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
         if (now - lastFallTime >= 1000) {
             //check if any are above a set block
-            if (canMove(&app.currentTet, 0, 1)) {
-                app.currentTet.y += 1;
+            if (canMove(app.currentTet, 0, 1)) {
+                app.currentTet->y += 1;
             } else {
                 startSound(&sfx[LAND]);
                 //set block
                 for (int k = 0; k < 4; k++) {
                     for (int l = 0; l < 4; l++) {
-                        if (app.currentTet.blocks[k][l].active == true) {
-                            posX = app.currentTet.x+app.currentTet.blocks[k][l].x;
-                            posY = app.currentTet.y+app.currentTet.blocks[k][l].y;
+                        if (app.currentTet->blocks[k][l].active == true) {
+                            posX = app.currentTet->x+app.currentTet->blocks[k][l].x;
+                            posY = app.currentTet->y+app.currentTet->blocks[k][l].y;
 
                             filledBlocks[posY][posX].v = true; 
-                            filledBlocks[posY][posX].r = app.currentTet.blocks[k][l].r; 
-                            filledBlocks[posY][posX].g = app.currentTet.blocks[k][l].g;
-                            filledBlocks[posY][posX].b = app.currentTet.blocks[k][l].b;
+                            filledBlocks[posY][posX].r = app.currentTet->blocks[k][l].r; 
+                            filledBlocks[posY][posX].g = app.currentTet->blocks[k][l].g;
+                            filledBlocks[posY][posX].b = app.currentTet->blocks[k][l].b;
                         }
                     }
                 }
@@ -917,9 +785,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     app.nextBlocks[n] = app.nextBlocks[n+1];
                 }
                 app.nextBlocks[3] = (int)SDL_rand(7); 
-                app.currentTet = app.tetArray[app.currentBlock];
-                app.currentTet.x = 4;
-                app.currentTet.y = 1;
+                *app.currentTet = *app.tetArray[app.currentBlock];
+                app.currentTet->x = 4;
+                app.currentTet->y = 1;
                 
                 updateNextBlocks();
 
@@ -937,7 +805,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     }
                 }
 
-                runWireframes(&app.currentTet);
+                runWireframes(app.currentTet);
 
                 //update score
                 if (linesCleared > 0) {
@@ -987,16 +855,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         //display falling tetromino
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
-                if (app.currentTet.blocks[y][x].active) {
-                    posX = app.currentTet.x + x;
-                    posY = app.currentTet.y + y;
+                if (app.currentTet->blocks[y][x].active) {
+                    posX = app.currentTet->x + x;
+                    posY = app.currentTet->y + y;
                     SDL_FRect Brect = {
                         (posX + app.bWidthMin) * TETROMINO_BLOCK_SIZE,
                         (posY + app.bHeightMin) * TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlock(Brect, app.currentTet.r, app.currentTet.g, app.currentTet.b);
+                    displayBlock(Brect, app.currentTet->r, app.currentTet->g, app.currentTet->b);
                 }
             }
         }
@@ -1008,14 +876,14 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         if (app.heldtet != -1) {
             for (int k = 0; k < 4; k++) {
                 for (int l = 0; l < 4; l++) {
-                    if (shapes[app.heldtet][k][l] == 1) {
+                    if (app.tetArray[app.heldtet]->blocks[k][l].active == true) {
                         SDL_FRect Hrect = {
                             l * TETROMINO_BLOCK_SIZE + baseX,
                             k * TETROMINO_BLOCK_SIZE + baseY,
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Hrect, app.tetArray[app.heldtet].r, app.tetArray[app.heldtet].g, app.tetArray[app.heldtet].b);
+                        displayBlock(Hrect, app.tetArray[app.heldtet]->r, app.tetArray[app.heldtet]->g, app.tetArray[app.heldtet]->b);
                     }
                 }
             } 
@@ -1037,14 +905,18 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-    /* SDL will clean up the window/renderer for us. */
+    SDL_free(app.renderer);
+    SDL_free(app.window);
+
     SDL_DestroyTexture(boardTexture);
     SDL_DestroyTexture(app.staticText);
     SDL_DestroyTexture(keyboard);
     SDL_DestroyTexture(app.keyboardText);
+
     TTF_CloseFont(app.globalFont);
     TTF_CloseFont(app.globalFontS);
     TTF_Quit();
+
     for (int i = 0; i < SDL_arraysize(sfx); i++) {
         if (sfx[i].stream) {
             SDL_DestroyAudioStream(sfx[i].stream);
@@ -1053,4 +925,12 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     }
     SDL_DestroyAudioStream(mainTheme.stream);
     SDL_free(mainTheme.audio_buff);
+
+    SDL_free(app.currentTet);
+    for (int j = 0; j < 7; j++) {
+        SDL_free(app.tetArray[j]);
+        if (j < 6) {
+            SDL_free(app.titleTetroes[j]);
+        }
+    }
 }

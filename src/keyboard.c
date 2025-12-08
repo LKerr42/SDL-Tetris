@@ -1,6 +1,7 @@
 #include "include/keyboard.h"
 #include "include/text.h"
 #include "include/app.h"
+#include "include/tetromino.h"
 #include "include/audio.h"
 
 void addKeyboardRects(appContext *app, int x, int y, int w, int h, bool down) {
@@ -437,41 +438,41 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
 void handleKeyboardInput(appContext *app, SDL_Scancode code) {
     switch (code) {
         case SDL_SCANCODE_LEFT: {
-            if (canMove(&app->currentTet, -1, 0)) {
+            if (canMove(app->currentTet, -1, 0)) {
                 startSound(&sfx[MOVELEFT]);
-                app->currentTet.x -= 1;
-                runWireframes(&app->currentTet);
+                app->currentTet->x -= 1;
+                runWireframes(app->currentTet);
             }
             break;
         }
         case SDL_SCANCODE_RIGHT: {
-            if (canMove(&app->currentTet, 1, 0)) {
+            if (canMove(app->currentTet, 1, 0)) {
                 startSound(&sfx[MOVERIGHT]);
-                app->currentTet.x += 1;
-                runWireframes(&app->currentTet);
+                app->currentTet->x += 1;
+                runWireframes(app->currentTet);
             }
             break;
         }
         case SDL_SCANCODE_DOWN: {
-            if (canMove(&app->currentTet, 0, 1)) {
-                app->currentTet.y += 1;
+            if (canMove(app->currentTet, 0, 1)) {
+                app->currentTet->y += 1;
             }
             break;
         }
         case SDL_SCANCODE_D: {
-            rotateTetrominoCW(&app->currentTet);
-            runWireframes(&app->currentTet);
+            rotateTetrominoCW(app->currentTet); 
+            runWireframes(app->currentTet);
             break;
         }
         case SDL_SCANCODE_A: {
-            rotateTetrominoCCW(&app->currentTet);
-            runWireframes(&app->currentTet);
+            rotateTetrominoCCW(app->currentTet);
+            runWireframes(app->currentTet);
             break;
         }
         case SDL_SCANCODE_R: {
             if (app->winning) {
                 restartMainTheme();
-                runWireframes(&app->currentTet);
+                runWireframes(app->currentTet);
                 resetGame();
                 startSound(&sfx[OPEN]);
             }
@@ -508,11 +509,11 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
                     }
                     app->nextBlocks[3] = (int)SDL_rand(7); 
                 }
-                app->currentTet = app->tetArray[app->currentBlock];
-                app->currentTet.x = 4;
-                app->currentTet.y = 1;
+                *app->currentTet = *app->tetArray[app->currentBlock];
+                app->currentTet->x = 4;
+                app->currentTet->y = 1;
                 updateNextBlocks();
-                runWireframes(&app->currentTet);
+                runWireframes(app->currentTet);
                 break;
             } else {
                 startSound(&sfx[OPEN]);
@@ -524,13 +525,13 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
         }
         case SDL_SCANCODE_LALT: {
             app->showWireframe = !app->showWireframe;
-            runWireframes(&app->currentTet);
+            runWireframes(app->currentTet);
             buildBoardTexture();
             break;
         }
         case SDL_SCANCODE_RALT: {
             app->showWireframe = !app->showWireframe;
-            runWireframes(&app->currentTet);
+            runWireframes(app->currentTet);
             buildBoardTexture();
             break;
         }

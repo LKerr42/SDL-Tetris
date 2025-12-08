@@ -4,7 +4,8 @@
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include "tetromino.h"
+
+struct tetromino;
 
 /**
  * Pixel size of all blocks
@@ -48,7 +49,7 @@ typedef struct {
  * Represents the main context for the entire app, only one instance.
  * Contains all related to rendering, the window, sizes, textures, and fonts
  */
-typedef struct {
+typedef struct appContext {
     SDL_Window *window;
     SDL_Renderer *renderer;
 
@@ -70,8 +71,9 @@ typedef struct {
     TTF_Font* globalFont;
     TTF_Font* globalFontS;
 
-    tetromino currentTet;
-    tetromino tetArray[7];
+    struct tetromino *currentTet;
+    struct tetromino *tetArray[7];
+    struct tetromino *titleTetroes[6];
     int nextBlocks[4];
     int heldtet, currentBlock;
 } appContext;
@@ -83,5 +85,13 @@ typedef struct {
  * \param c    Character to add
  */
 void prependChar(char *str, char c);
+
+bool canMove(struct tetromino *t, int dx, int dy);
+void runWireframes(struct tetromino *copyTet);
+void rotateTetrominoCCW(struct tetromino *t);
+void rotateTetrominoCW(struct tetromino *t);
+void resetGame();
+void updateNextBlocks();
+void buildBoardTexture();
 
 #endif

@@ -2,9 +2,8 @@
 echo Compiling...
 
 REM Compile the program
-REM
+REM    -ffunction-sections -fdata-sections -Wl,--subsystem,windows ^
 gcc -g src/*.c resources.o -o tetris.exe ^
-    -ffunction-sections -fdata-sections -Wl,--subsystem,windows ^
     -I "C:\Users\LiamK\Documents\Uni\SDL\x86_64-w64-mingw32\include" ^
     -I "C:\Users\LiamK\Documents\Uni\SDL3_ttf\x86_64-w64-mingw32\include" ^
     -I "C:\Users\LiamK\Documents\Uni\SDL3_image\x86_64-w64-mingw32\include" ^

@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+struct appContext;
+
 /**
  * blockStruct:
  * Representation of a block in a tetromino, x and y values are within the local 4x4 of the tetromino.
@@ -21,7 +23,7 @@ blockStruct block;
  * tetromino:
  * Representation of a tetromino, array of blockStructs encode critical data
  */
-typedef struct {
+typedef struct tetromino {
     blockStruct blocks[4][4];
     blockStruct titleBlocks[5][4];
     int r;
@@ -45,7 +47,7 @@ colours colour[7];
 /**
  * Set the colour of a blockStruct instance
  * 
- * \param *app  Pointer to the instance to update
+ * \param *block  Pointer to the instance to update
  * \param R     New r RGB value
  * \param G     New g RGB value
  * \param B     New b RGB value
@@ -55,7 +57,7 @@ void setBlockColour(blockStruct *block, int R, int G, int B);
 /**
  * Set the colour of a tetromino instance
  * 
- * \param *app  Pointer to the instance to update
+ * \param *object  Pointer to the instance to update
  * \param R     New r RGB value
  * \param G     New g RGB value
  * \param B     New b RGB value
@@ -65,11 +67,15 @@ void setTetColour(tetromino *object, int R, int G, int B);
 /**
  * Set the colour of a colours instance
  * 
- * \param *app  Pointer to the instance to update
+ * \param *data  Pointer to the instance to update
  * \param R     New r RGB value
  * \param G     New g RGB value
  * \param B     New b RGB value
  */
 void setColourDef(colours *data, int R, int G, int B);
+
+void setupTetrominos(struct appContext *app);
+
+void setupTitleBlocks(struct appContext *app);
 
 #endif
