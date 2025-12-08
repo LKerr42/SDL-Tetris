@@ -14,9 +14,23 @@
 #include "include/tetromino.h"
 
 //file specific globals
-int score = 0;
 bool firstRun = true;
-char scoreString[7] = "0000000";
+char scoreString[7] = "0000000", *finalScore = NULL;
+int score = 0, currentMove = 0, currentColour = 1;
+int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
+float keyW, keyH;
+
+char fileNames[9][16] = {
+    "clear",
+    "holyMoly",
+    "land",
+    "moveLeft",
+    "moveRight",
+    "open",
+    "spinCCW",
+    "spinCW",
+    "switch"
+};
 
 appContext app;
 
@@ -209,21 +223,6 @@ void displayNextBlocks() {
     SDL_RenderTexture(app.renderer, nextTexture, NULL, &displayRect);
 }
 
-char fileNames[9][16] = {
-    "clear",
-    "holyMoly",
-    "land",
-    "moveLeft",
-    "moveRight",
-    "open",
-    "spinCCW",
-    "spinCW",
-    "switch"
-};
-
-float keyW, keyH;
-int halfTitleWidth, halfTitleHeight;
-
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     // -- setup --
@@ -242,9 +241,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
 
-    printf("Setting up Tetrominoes\n");
     setupTetrominos(&app);
-    printf("Setting up title blocks\n");
     setupTitleBlocks(&app);
 
     setColourDef(&colour[0], 0, 0, 255); //blue
@@ -649,10 +646,6 @@ void moveBoardDown(int remove) {
         }
     }
 }
-
-int posX = 0, posY = 0;
-int currentMove = 0, currentColour = 1;
-char* finalScore = NULL;
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {

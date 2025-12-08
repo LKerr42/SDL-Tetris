@@ -73,7 +73,7 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
             addKeyboardRects(app, 55, 9, 5, 7, pressing);
             break;
         }
-        case SDL_SCANCODE_P: { //TODO: add pause function
+        case SDL_SCANCODE_P: {
             writeToKeyboardText(app, "-P-", "", pressing, SDL_SCANCODE_P);
             addKeyboardRects(app, 61, 9, 5, 7, pressing);
             break;
@@ -435,7 +435,7 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
     }
 }
 
-void handleKeyboardInput(appContext *app, SDL_Scancode code) {
+void handleKeyboardInput(appContext *app, SDL_Scancode code) { //TODO: add pause function
     switch (code) {
         case SDL_SCANCODE_LEFT: {
             if (canMove(app->currentTet, -1, 0)) {

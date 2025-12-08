@@ -74,8 +74,20 @@ void setTetColour(tetromino *object, int R, int G, int B);
  */
 void setColourDef(colours *data, int R, int G, int B);
 
+/**
+ * Full set up the tetrominoes and their blocks. Set up all the positions, structs, memory, and colours
+ * Only needed to run once.
+ * 
+ * \param *app  Pointer to the main context
+ */
 void setupTetrominos(struct appContext *app);
 
+/**
+ * Full set up the title tetrominoes and their blocks. Set up all the positions, structs, memory, and colours
+ * Only needed to run once.
+ * 
+ * \param *app  Pointer to the main context
+ */
 void setupTitleBlocks(struct appContext *app);
 
 #endif

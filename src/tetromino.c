@@ -60,12 +60,10 @@ void setupTetrominos(appContext *app) {
          {0, 0, 0, 0}},
     };
 
-    printf("Allocating memory\n");
     for (int a = 0; a < 7; a++) {
         app->tetArray[a] = calloc(1, sizeof(struct tetromino));
     }
 
-    printf("Defining colours\n");
     setTetColour(app->tetArray[0], 0, 255, 255); //Long boy
     setTetColour(app->tetArray[1], 0, 0, 255);   //Left L
     setTetColour(app->tetArray[2], 255, 160, 0); //Right L
@@ -74,10 +72,8 @@ void setupTetrominos(appContext *app) {
     setTetColour(app->tetArray[5], 150, 0, 255); //T boy
     setTetColour(app->tetArray[6], 255, 0, 0);   //Left squiggle
 
-    printf("Allocating memory for currentTet\n");
     app->currentTet = calloc(1, sizeof(struct tetromino));
 
-    printf("Setting each tet up\n");
     for (int count = 0; count < 7; count++) {
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
