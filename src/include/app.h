@@ -57,10 +57,9 @@ typedef struct appContext {
     int bWidthMin, bWidthMax, bHeightMin, bHeightMax;
     float textW, textH;
 
-    bool winning, keyboardCard, titleCard, showWireframe;
+    bool winning, keyboardCard, titleCard, showWireframe, paused;
 
-    Uint8 amountPressed;
-    Uint8 amountPressedDown;
+    Uint8 amountPressed, amountPressedDown;
 
     textTexture textArray[300];
     SDL_Texture *keyboardText;

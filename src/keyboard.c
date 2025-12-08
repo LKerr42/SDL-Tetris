@@ -3,6 +3,7 @@
 #include "include/app.h"
 #include "include/tetromino.h"
 #include "include/audio.h"
+#include <stdio.h>
 
 void addKeyboardRects(appContext *app, int x, int y, int w, int h, bool down) {
     SDL_SetRenderTarget(app->renderer, app->backgroundKeyboard);
@@ -74,7 +75,7 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
             break;
         }
         case SDL_SCANCODE_P: {
-            writeToKeyboardText(app, "-P-", "", pressing, SDL_SCANCODE_P);
+            writeToKeyboardText(app, "-P-", "Tap to pause/play", pressing, SDL_SCANCODE_P);
             addKeyboardRects(app, 61, 9, 5, 7, pressing);
             break;
         }
@@ -435,10 +436,10 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
     }
 }
 
-void handleKeyboardInput(appContext *app, SDL_Scancode code) { //TODO: add pause function
+void handleKeyboardInput(appContext *app, SDL_Scancode code) {
     switch (code) {
         case SDL_SCANCODE_LEFT: {
-            if (canMove(app->currentTet, -1, 0)) {
+            if (canMove(app->currentTet, -1, 0) && !app->paused) {
                 startSound(&sfx[MOVELEFT]);
                 app->currentTet->x -= 1;
                 runWireframes(app->currentTet);
@@ -446,7 +447,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) { //TODO: add pause
             break;
         }
         case SDL_SCANCODE_RIGHT: {
-            if (canMove(app->currentTet, 1, 0)) {
+            if (canMove(app->currentTet, 1, 0) && !app->paused) {
                 startSound(&sfx[MOVERIGHT]);
                 app->currentTet->x += 1;
                 runWireframes(app->currentTet);
@@ -454,23 +455,27 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) { //TODO: add pause
             break;
         }
         case SDL_SCANCODE_DOWN: {
-            if (canMove(app->currentTet, 0, 1)) {
+            if (canMove(app->currentTet, 0, 1) && !app->paused) {
                 app->currentTet->y += 1;
             }
             break;
         }
         case SDL_SCANCODE_D: {
-            rotateTetrominoCW(app->currentTet); 
-            runWireframes(app->currentTet);
+            if (!app->paused) {
+                rotateTetrominoCW(app->currentTet); 
+                runWireframes(app->currentTet);
+            }
             break;
         }
         case SDL_SCANCODE_A: {
-            rotateTetrominoCCW(app->currentTet);
-            runWireframes(app->currentTet);
+            if (!app->paused) {
+                rotateTetrominoCCW(app->currentTet);
+                runWireframes(app->currentTet);
+            }
             break;
         }
         case SDL_SCANCODE_R: {
-            if (app->winning) {
+            if (app->winning && !app->paused) {
                 restartMainTheme();
                 runWireframes(app->currentTet);
                 resetGame();
@@ -495,7 +500,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) { //TODO: add pause
                 app->keyboardCard = false;
                 app->winning = true;
                 break;
-            } else if (app->winning) {
+            } else if (app->winning && !app->paused) {
                 startSound(&sfx[SWITCH]);
                 //swap values
                 int temp = app->heldtet;
@@ -515,7 +520,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) { //TODO: add pause
                 updateNextBlocks();
                 runWireframes(app->currentTet);
                 break;
-            } else {
+            } else if (!app->paused) {
                 startSound(&sfx[OPEN]);
                 restartMainTheme();
                 resetGame();
@@ -524,15 +529,25 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) { //TODO: add pause
             break;
         }
         case SDL_SCANCODE_LALT: {
-            app->showWireframe = !app->showWireframe;
-            runWireframes(app->currentTet);
-            buildBoardTexture();
+            if (!app->paused) {
+                app->showWireframe = !app->showWireframe;
+                runWireframes(app->currentTet);
+                buildBoardTexture();
+            }
             break;
         }
         case SDL_SCANCODE_RALT: {
-            app->showWireframe = !app->showWireframe;
-            runWireframes(app->currentTet);
-            buildBoardTexture();
+            if (!app->paused) {
+                app->showWireframe = !app->showWireframe;
+                runWireframes(app->currentTet);
+                buildBoardTexture();
+            }
+            break;
+        }
+        case SDL_SCANCODE_P: {
+            if (app->winning) {
+                app->paused = !app->paused;
+            }
             break;
         }
     }

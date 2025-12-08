@@ -610,7 +610,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             if (app.keyboardCard) {
                 handleInputKeyboardCard(&app, event->key.scancode, false);
             } 
-            if (event->key.scancode == SDL_SCANCODE_DOWN) {
+            if (event->key.scancode == SDL_SCANCODE_DOWN && app.winning) {
                 app.amountPressedDown++;
             }
         }
@@ -638,7 +638,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
-void moveBoardDown(int remove) {
+void moveBoardDown(int remove) { //TODO: add sweeping animation to this
     //start at the index and set each to the one above
     for (int i = remove; i >= 2; i--) {
         for (int j = 1; j <= 10; j++) {
@@ -753,9 +753,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
         if (now - lastFallTime >= 1000) {
             //check if any are above a set block
-            if (canMove(app.currentTet, 0, 1)) {
+            if (canMove(app.currentTet, 0, 1) && !app.paused) {
                 app.currentTet->y += 1;
-            } else {
+            } else if (!app.paused) {
                 startSound(&sfx[LAND]);
                 //set block
                 for (int k = 0; k < 4; k++) {
@@ -905,6 +905,11 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     SDL_DestroyTexture(app.staticText);
     SDL_DestroyTexture(keyboard);
     SDL_DestroyTexture(app.keyboardText);
+    for (int k = 0; k < 300; k++) {
+        if (app.textArray != NULL) {
+            SDL_free(app.textArray->tex);
+        }
+    }
 
     TTF_CloseFont(app.globalFont);
     TTF_CloseFont(app.globalFontS);
