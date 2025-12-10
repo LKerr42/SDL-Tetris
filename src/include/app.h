@@ -69,6 +69,7 @@ typedef struct appContext {
 
     TTF_Font* globalFont;
     TTF_Font* globalFontS;
+    TTF_Font* globalFontL;
 
     struct tetromino *currentTet;
     struct tetromino *tetArray[7];
