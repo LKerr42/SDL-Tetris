@@ -105,8 +105,8 @@ void writeToKeyboardText(appContext *app, char mainStr[], char subStr[], bool wr
 
 void setupStaticText(appContext *app) {
     //board sizes 
-    int widMinT = app->bWidthMin*TETROMINO_BLOCK_SIZE, widMaxT = app->bWidthMax*TETROMINO_BLOCK_SIZE;
-    int higMinT = app->bHeightMin*TETROMINO_BLOCK_SIZE, higMaxT = app->bHeightMax*TETROMINO_BLOCK_SIZE;
+    int widMinT = app->bWidthMin, widMaxT = app->bWidthMax;
+    int higMinT = app->bHeightMin, higMaxT = app->bHeightMax;
 
     // Render text to a surface
     SDL_Color textColor = {255, 255, 255, 255};
@@ -126,8 +126,8 @@ void setupStaticText(appContext *app) {
     //setup destination rects
     SDL_Rect dest1 = {(app->width >> 1) - (surface1->w >> 1) + 15, higMinT>>1, surface1->w, textHeight};
     SDL_Rect dest2 = {widMinT-180, higMinT+20, surface2->w, textHeight};
-    SDL_Rect dest3 = {widMaxT+60, higMinT+20, surface3->w, textHeight};
-    SDL_Rect dest4 = {widMaxT+60, higMinT+(textHeight << 1)+60, surface4->w, textHeight};
+    SDL_Rect dest3 = {widMaxT+20, higMinT+20, surface3->w, textHeight};
+    SDL_Rect dest4 = {widMaxT+20, higMinT+(textHeight << 1)+60, surface4->w, textHeight};
 
     //copy to combined
     SDL_BlitSurface(surface1, NULL, combined, &dest1);

@@ -54,9 +54,6 @@ SDL_FRect keyRect;
 
 SDL_FRect keyboardTextRect;
 SDL_FRect pausedBackground;
-SDL_FRect tempRect;
-SDL_FRect boardRect;
-SDL_FRect boardHalfRect;
 
 void displayBlock(SDL_FRect rect, int r, int g, int b) {
     int i, j, cX = 0, cY = 0;
@@ -176,8 +173,8 @@ void buildBoardTexture() {
 //TODO: improve efficency by moving rect def to widow resize
 void renderBoard() {
     SDL_FRect displayRect = {
-        app.bWidthMin*TETROMINO_BLOCK_SIZE,
-        app.bHeightMin*TETROMINO_BLOCK_SIZE,
+        app.bWidthMin,
+        app.bHeightMin,
         12*TETROMINO_BLOCK_SIZE,
         22*TETROMINO_BLOCK_SIZE
     };
@@ -218,8 +215,8 @@ void updateNextBlocks() {
 
 void displayNextBlocks() {
     SDL_FRect displayRect = {
-        (app.bWidthMax * TETROMINO_BLOCK_SIZE) + 60,
-        (app.bHeightMin * TETROMINO_BLOCK_SIZE) + 150,
+        (app.bWidthMax + 20),
+        (app.bHeightMin + 150),
         TETROMINO_BLOCK_SIZE << 2,
         (TETROMINO_BLOCK_SIZE << 3) + (TETROMINO_BLOCK_SIZE << 2)
     };
@@ -235,36 +232,19 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.titleCard = true;
     app.showWireframe = true;
     app.heldtet = -1;
+    app.amountPressed = -1;
 
     SDL_FRect temp4 = {0, 0, app.width, app.height};
     pausedBackground = temp4;
-    SDL_FRect temp5 = {(app.width >> 1), (app.height >> 1), 1, 1};
-    tempRect = temp5;
 
-    app.bWidthMin = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) - 5; // - 5
-    app.bWidthMax = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) + 5; // + 5
+    app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
+    app.bWidthMax = (app.width >> 1) + (6*TETROMINO_BLOCK_SIZE); // + 5
 
-    app.bHeightMin = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) - 10; // - 10
-    app.bHeightMax = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) + 10; // + 10
+    app.bHeightMin = (app.height >> 1) - (11*TETROMINO_BLOCK_SIZE); // - 10
+    app.bHeightMax = (app.height >> 1) + (11*TETROMINO_BLOCK_SIZE);; // + 10
 
     halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
-
-    SDL_FRect temp6 = {
-        app.bWidthMin*TETROMINO_BLOCK_SIZE, 
-        app.bWidthMin*TETROMINO_BLOCK_SIZE, 
-        app.bWidthMax*TETROMINO_BLOCK_SIZE, 
-        app.bHeightMax*TETROMINO_BLOCK_SIZE
-    };
-    boardRect = temp6;
-
-    SDL_FRect temp7 ={ 
-        ((app.width / TETROMINO_BLOCK_SIZE) >> 1),
-        ((app.height / TETROMINO_BLOCK_SIZE) >> 1),
-        1,
-        1
-    };
-    boardHalfRect = temp7;
 
     setupTetrominos(&app);
     setupTitleBlocks(&app);
@@ -646,11 +626,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         }
         case SDL_EVENT_WINDOW_RESIZED: {
             SDL_GetWindowSize(app.window, &app.width, &app.height);
-            app.bWidthMin = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) - 6; // - 5
-            app.bWidthMax = ((app.width / TETROMINO_BLOCK_SIZE) >> 1) + 6; // + 5
+            app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
+            app.bWidthMax = (app.width >> 1) + (6*TETROMINO_BLOCK_SIZE); // + 5
 
-            app.bHeightMin = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) - 11; // - 10
-            app.bHeightMax = ((app.height / TETROMINO_BLOCK_SIZE) >> 1) + 11; // + 10
+            app.bHeightMin = (app.height >> 1) - (11*TETROMINO_BLOCK_SIZE); // - 10
+            app.bHeightMax = (app.height >> 1) + (11*TETROMINO_BLOCK_SIZE);; // + 10
             setupStaticText(&app);
 
             keyRect.x = (app.width >> 1) - ((int)keyW/2);
@@ -665,24 +645,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             SDL_FRect temp2 = {0, 0, app.width, app.height};
             pausedBackground = temp2;
 
-            SDL_FRect temp5 = {(app.width >> 1), (app.height >> 1), 1, 1};
-            tempRect = temp5;
-
-            SDL_FRect temp6 = {
-                app.bWidthMin*TETROMINO_BLOCK_SIZE, 
-                app.bWidthMin*TETROMINO_BLOCK_SIZE, 
-                app.bWidthMax*TETROMINO_BLOCK_SIZE, 
-                app.bHeightMax*TETROMINO_BLOCK_SIZE
-            };
-            boardRect = temp6;
-
-            SDL_FRect temp7 ={ 
-                ((app.width / TETROMINO_BLOCK_SIZE) >> 1),
-                ((app.height / TETROMINO_BLOCK_SIZE) >> 1),
-                1,
-                1
-            };
-            boardHalfRect = temp7;
             break;
         }
     }
@@ -780,7 +742,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             *app.currentTet = *app.tetArray[app.currentBlock];
             runWireframes(app.currentTet);
         }
-        displayText(&app, scoreString, (app.bWidthMax*TETROMINO_BLOCK_SIZE)+60, (app.bHeightMin*TETROMINO_BLOCK_SIZE)+49, app.globalFont, 255, 255, 255);
+        displayText(&app, scoreString, (app.bWidthMax+20), (app.bHeightMin+49), app.globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
         char incompleteScore[7];
 
@@ -901,11 +863,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
                 if (app.currentTet->blocks[y][x].active) {
-                    posX = app.currentTet->x + x;
-                    posY = app.currentTet->y + y;
+                    posX = (app.currentTet->x + x) * TETROMINO_BLOCK_SIZE;
+                    posY = (app.currentTet->y + y) * TETROMINO_BLOCK_SIZE;
                     SDL_FRect Brect = {
-                        (posX + app.bWidthMin) * TETROMINO_BLOCK_SIZE,
-                        (posY + app.bHeightMin) * TETROMINO_BLOCK_SIZE,
+                        (app.bWidthMin + posX),
+                        (app.bHeightMin + posY),
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
@@ -914,8 +876,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
 
-        int baseX = (app.bWidthMin*TETROMINO_BLOCK_SIZE)-180 + (TETROMINO_BLOCK_SIZE << 1);
-        int baseY = (app.bHeightMin*TETROMINO_BLOCK_SIZE)+70;
+        int baseX = (app.bWidthMin-180) + (TETROMINO_BLOCK_SIZE << 1);
+        int baseY = (app.bHeightMin+70);
 
         //display held tetromino
         if (app.heldtet != -1) {
@@ -940,13 +902,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);
         } 
-
-        SDL_SetRenderDrawColor(app.renderer, 255, 0, 0, 255);
-        SDL_RenderFillRect(app.renderer, &tempRect);
-        SDL_RenderRect(app.renderer, &boardRect);
-
-        SDL_SetRenderDrawColor(app.renderer, 255, 255, 0, 255);
-        SDL_RenderFillRect(app.renderer, &boardHalfRect);
     } else if (app.titleCard == false) { //lose card
         SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
         SDL_RenderClear(app.renderer);

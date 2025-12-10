@@ -47,33 +47,42 @@ typedef struct {
 /**
  * appContext:
  * Represents the main context for the entire app, only one instance.
- * Contains all related to rendering, the window, sizes, textures, and fonts
+ * Contains all related to rendering, the window, sizes, textures, tetrominoes, and fonts
  */
 typedef struct appContext {
+    //Pointers to the window and renderer
     SDL_Window *window;
     SDL_Renderer *renderer;
 
-    int width, height;
-    int bWidthMin, bWidthMax, bHeightMin, bHeightMax;
-    float textW, textH;
+    int width, height; //Width and height of the window in pixels
+    int bWidthMin, bWidthMax, bHeightMin, bHeightMax; //bounding box of the board in pixels
+    float textW, textH; // Width and height of the static text
 
+    //Control booleans
     bool winning, keyboardCard, titleCard, showWireframe, paused;
 
+    //Double press control counters
     Uint8 amountPressed, amountPressedDown;
 
+    //array of all the text textures in the control menu and its main texture
     textTexture textArray[300];
     SDL_Texture *keyboardText;
 
+    //static text and red backgrounds for keyboard texture
     SDL_Texture *staticText;
     SDL_Texture *backgroundKeyboard;
 
+    //Three sizes of the global font
     TTF_Font* globalFont;
     TTF_Font* globalFontS;
     TTF_Font* globalFontL;
 
+    //Pointers to the uses of tetromino struct
     struct tetromino *currentTet;
     struct tetromino *tetArray[7];
     struct tetromino *titleTetroes[6];
+
+    //Control ints for next, held, and current tetroes
     int nextBlocks[4];
     int heldtet, currentBlock;
 } appContext;
