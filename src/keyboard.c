@@ -518,7 +518,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
                 *app->currentTet = *app->tetArray[app->currentBlock];
                 app->currentTet->x = 4;
                 app->currentTet->y = 1;
-                updateNextBlocks();
+                updateNextBlocks(app);
                 runWireframes(app->currentTet);
                 break;
             } else if (!app->paused) {

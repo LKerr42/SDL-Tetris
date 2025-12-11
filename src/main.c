@@ -1,7 +1,6 @@
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <SDL3_ttf/SDL_ttf.h>
 #include <SDL3_image/SDL_image.h>
 
 #include <stdio.h>
@@ -21,6 +20,8 @@ int score = 0, currentMove = 0, currentColour = 1;
 int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
 float keyW, keyH;
 
+SDL_Surface *icon;
+
 char fileNames[9][16] = {
     "clear",
     "holyMoly",
@@ -36,331 +37,12 @@ char fileNames[9][16] = {
 // Context for the whole app
 appContext app;
 
-SDL_Texture *nextTexture;
-SDL_Surface *icon;
-
 SDL_Texture *keyboard;
 SDL_Surface *keyboardSurface;
 SDL_FRect keyRect;
 
 SDL_FRect keyboardTextRect;
 SDL_FRect pausedBackground;
-
-void displayBlock(SDL_FRect rect, int r, int g, int b) {
-    int i, j, cX = 0, cY = 0;
-    int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
-    
-    int cR = SDL_clamp(r-45, 0, 255);
-    int cG = SDL_clamp(g-45, 0, 255);
-    int cB = SDL_clamp(b-45, 0, 255);
-
-    int bR = SDL_clamp(r-90, 0, 255);
-    int bG = SDL_clamp(g-90, 0, 255);
-    int bB = SDL_clamp(b-90, 0, 255);
-
-    SDL_FRect pixelRect;
-    pixelRect.w = pixelRect.h = 1;
-    for (i = minY; i < maxY; i++) {
-        cY++;
-        for (j = minX; j < maxX; j++) { 
-            cX++;
-            if (i > minY+3 && i < maxY-3 && j > minX+3 && j < maxX-3) {
-                SDL_SetRenderDrawColor(app.renderer, cR, cG, cB, SDL_ALPHA_OPAQUE); 
-            } else if ((-cX+rect.w) - cY < -1) {
-                SDL_SetRenderDrawColor(app.renderer, bR, bG, bB, SDL_ALPHA_OPAQUE); 
-            } else {
-                SDL_SetRenderDrawColor(app.renderer, r, g, b, SDL_ALPHA_OPAQUE);
-            }
-            pixelRect.y = i;
-            pixelRect.x = j;
-            SDL_RenderFillRect(app.renderer, &pixelRect);
-        }
-        cX = 0;
-    }
-}
-
-void displayBlockToTexture(SDL_FRect rect, int r, int g, int b, SDL_Texture* texture, bool isWireframe) {
-    int i, j, cX = 0, cY = 0;
-    int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
-    
-    int cR = SDL_clamp(r-45, 0, 255);
-    int cG = SDL_clamp(g-45, 0, 255);
-    int cB = SDL_clamp(b-45, 0, 255);
-
-    int bR = SDL_clamp(r-90, 0, 255);
-    int bG = SDL_clamp(g-90, 0, 255);
-    int bB = SDL_clamp(b-90, 0, 255);
-
-    SDL_SetRenderTarget(app.renderer, texture);
-
-    SDL_FRect pixelRect;
-    pixelRect.w = pixelRect.h = 1;
-    for (i = minY; i < maxY; i++) {
-        cY++;
-        for (j = minX; j < maxX; j++) { 
-            cX++;
-            if (i > minY+3 && i < maxY-3 && j > minX+3 && j < maxX-3) {
-                if (!isWireframe) {
-                    SDL_SetRenderDrawColor(app.renderer, cR, cG, cB, SDL_ALPHA_OPAQUE); 
-                } else {
-                    SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE); 
-                }
-            } else if ((-cX+rect.w) - cY < -1) {
-                SDL_SetRenderDrawColor(app.renderer, bR, bG, bB, SDL_ALPHA_OPAQUE); 
-            } else {
-                SDL_SetRenderDrawColor(app.renderer, r, g, b, SDL_ALPHA_OPAQUE);
-            }
-            pixelRect.y = i;
-            pixelRect.x = j;
-            SDL_RenderFillRect(app.renderer, &pixelRect);
-        }
-        cX = 0;
-    }
-
-    SDL_SetRenderTarget(app.renderer, NULL);
-}
-
-//TODO: improve efficency by moving rect def to widow resize
-void renderBoard() {
-    SDL_FRect displayRect = {
-        app.bWidthMin,
-        app.bHeightMin,
-        12*TETROMINO_BLOCK_SIZE,
-        22*TETROMINO_BLOCK_SIZE
-    };
-
-    SDL_RenderTexture(app.renderer, app.boardTexture, NULL, &displayRect);
-}
-
-void updateNextBlocks() {
-    SDL_SetRenderTarget(app.renderer, nextTexture);
-
-    // Clear previous contents
-    SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 255);
-    SDL_RenderClear(app.renderer);
-
-    int posX, posY;
-
-    //display next blocks
-    for (int block = 0; block < 4; block++) {
-        for (int d = 0; d < 4; d++) {
-            for (int e = 0; e < 4; e++) {
-                if (app.tetArray[app.nextBlocks[block]]->blocks[d][e].active == true) {
-                    posX = e * TETROMINO_BLOCK_SIZE;
-                    posY = d * TETROMINO_BLOCK_SIZE + ((TETROMINO_BLOCK_SIZE*3) * block);
-                    SDL_FRect Nrect = {
-                        posX,
-                        posY,
-                        TETROMINO_BLOCK_SIZE,
-                        TETROMINO_BLOCK_SIZE
-                    };
-                    displayBlockToTexture(Nrect, app.tetArray[app.nextBlocks[block]]->r, app.tetArray[app.nextBlocks[block]]->g, app.tetArray[app.nextBlocks[block]]->b, nextTexture, false);
-                }
-            }
-        }
-    }
-
-    SDL_SetRenderTarget(app.renderer, NULL); // back to screen
-}
-
-void displayNextBlocks() {
-    SDL_FRect displayRect = {
-        (app.bWidthMax + 20),
-        (app.bHeightMin + 150),
-        TETROMINO_BLOCK_SIZE << 2,
-        (TETROMINO_BLOCK_SIZE << 3) + (TETROMINO_BLOCK_SIZE << 2)
-    };
-
-    SDL_RenderTexture(app.renderer, nextTexture, NULL, &displayRect);
-}
-
-/* This function runs once at startup. */
-SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
-    // -- setup --
-    app.width = 1000;
-    app.height = 750;
-    app.titleCard = true;
-    app.showWireframe = true;
-    app.heldtet = -1;
-    app.amountPressed = -1;
-
-    SDL_FRect temp4 = {0, 0, app.width, app.height};
-    pausedBackground = temp4;
-
-    // -- width and heights --
-    app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
-    app.bWidthMax = (app.width >> 1) + (6*TETROMINO_BLOCK_SIZE); // + 5
-
-    app.bHeightMin = (app.height >> 1) - (11*TETROMINO_BLOCK_SIZE); // - 10
-    app.bHeightMax = (app.height >> 1) + (11*TETROMINO_BLOCK_SIZE);; // + 10
-
-    halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
-    halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
-
-    setupTetrominos(&app);
-    setupTitleBlocks(&app);
-
-    // -- colours --
-    setColourDef(&colour[0], 0, 0, 255); //blue
-    setColourDef(&colour[1], 0, 255, 255); //turquoise
-    setColourDef(&colour[2], 0, 255, 0); //green
-    setColourDef(&colour[3], 255, 255, 0); //yellow
-    setColourDef(&colour[4], 255, 160, 0); //orange
-    setColourDef(&colour[5], 255, 0, 0); //red
-    setColourDef(&colour[6], 150, 0, 255); //purple
-
-    // -- border -- 
-    for (int i = 0; i < 22; i++) {
-        for (int j = 0; j < 12; j++) {
-            app.filledBlocks[i][j] = calloc(1, sizeof(setBlocks));
-            if (i == 0 || i == 21 || j == 0 || j == 11) {
-                app.filledBlocks[i][j]->v = true;
-                app.filledBlocks[i][j]->r = app.filledBlocks[i][j]->g = app.filledBlocks[i][j]->b = 125;
-            } else {
-                app.filledBlocks[i][j]->v = false;
-            }
-        }
-    }
-
-    // -- init --
-    SDL_SetAppMetadata("Play Tetis!", "1.1.0", "com/LKerr42/SDL-Tetris.github");
-
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-
-    if (!TTF_Init()) {
-        SDL_Log("Couldn't initialize ttf: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-
-    // -- window --
-    bool wind = SDL_CreateWindowAndRenderer(
-        "Play Tetris!", 
-        app.width, app.height, 
-        SDL_WINDOW_RESIZABLE,
-        &app.window, &app.renderer
-    );
-    if (!wind) {
-        SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-
-    // -- icon --
-    icon = IMG_Load("assets/iconT.ico");
-    SDL_SetWindowIcon(app.window, icon);
-    SDL_DestroySurface(icon);
-
-    // -- keyboard image --
-    keyboardSurface = IMG_Load("assets/keyboard.png");
-    if (keyboardSurface == NULL) {
-        SDL_Log("Failed to load keyboardSurface: %s", SDL_GetError());
-    }
-    keyboard = SDL_CreateTextureFromSurface(app.renderer, keyboardSurface);
-    if (keyboard == NULL) {
-        SDL_Log("Failed to load keyboard: %s", SDL_GetError());
-    }
-
-    SDL_GetTextureSize(keyboard, &keyW, &keyH);
-
-    int intKeyH = (int)keyH, intKeyW = (int)keyW;
-
-    int keyX = (app.width >> 1) - (intKeyW >> 1);
-    int keyY = (app.height >> 1) - (intKeyH >> 1);
-
-    SDL_FRect temp = {keyX, keyY-5, intKeyW, intKeyH};
-    keyRect = temp;
-
-    // -- fonts -- 
-    app.globalFont = TTF_OpenFont("assets\\NES.ttf", 25);
-    if (app.globalFont == NULL) {
-        SDL_Log("Failed to load font app.globalFont: %s", SDL_GetError());
-    }
-
-    app.globalFontS = TTF_OpenFont("assets\\NES.ttf", 17);
-    if (app.globalFontS == NULL) {
-        SDL_Log("Failed to load font app.globalFontS: %s", SDL_GetError());
-    }
-
-    app.globalFontL = TTF_OpenFont("assets\\NES.ttf", 32);
-    if (app.globalFontL == NULL) {
-        SDL_Log("Failed to load font app.globalFontL: %s", SDL_GetError());
-    }
-
-    setupStaticText(&app);
-
-    // -- texture setup --
-    app.boardTexture = SDL_CreateTexture(
-        app.renderer,
-        SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_TARGET,
-        12*TETROMINO_BLOCK_SIZE,
-        22*TETROMINO_BLOCK_SIZE
-    );
-    if (!app.boardTexture) {
-        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
-    }
-
-    buildBoardTexture(&app);
-
-    nextTexture = SDL_CreateTexture(
-        app.renderer,
-        SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_TARGET,
-        TETROMINO_BLOCK_SIZE << 2,
-        (TETROMINO_BLOCK_SIZE << 3) + (TETROMINO_BLOCK_SIZE << 2)
-    );
-    if (!nextTexture) {
-        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
-    }
-
-    app.backgroundKeyboard  = SDL_CreateTexture(
-        app.renderer,
-        SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_TARGET,
-        intKeyW, intKeyH
-    );
-    if (!app.backgroundKeyboard) {
-        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
-    }
-
-    app.keyboardText = SDL_CreateTexture(
-        app.renderer,
-        SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_TARGET,
-        intKeyW, 100
-    );
-    if (!app.keyboardText) {
-        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
-    }
-
-    SDL_FRect temp2 = {keyX, keyY+intKeyH+5, intKeyW, 100};
-    keyboardTextRect = temp2;
-
-    // -- next blocks -- 
-    for (int k = 0; k < 4; k++) {
-        app.nextBlocks[k] = SDL_rand(7);
-    }
-
-    updateNextBlocks();
-
-    // -- audio --
-    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
-        SDL_Log("SDL_Init AUDIO failed: %s", SDL_GetError());
-    }
-
-    char *wavPath = NULL;
-    for (int i = 0; i < SDL_arraysize(sfx); i++) {
-        SDL_asprintf(&wavPath, "%s%s.wav", "assets/audio/", fileNames[i]);
-        initaliseAudioFile(&sfx[i], wavPath);
-    }
-    initaliseAudioFile(&mainTheme, "assets/audio/Tetris.wav");
-    SDL_SetAudioStreamGain(mainTheme.stream, 0.5f);
-    SDL_SetAudioStreamGain(sfx[LAND].stream, 1.5f);
-
-    return SDL_APP_CONTINUE;  /* carry on with the program! */
-}
 
 bool canMove(tetromino *t, int dx, int dy) {
     for (int row = 0; row < 4; row++) {
@@ -518,9 +200,9 @@ void resetBoard() {
         }
     }
     buildBoardTexture(&app);
-    updateNextBlocks();
-    displayNextBlocks();
-    renderBoard();
+    updateNextBlocks(&app);
+    displayNextBlocks(&app);
+    renderBoard(&app);
 }
 
 void resetGame() {
@@ -552,6 +234,203 @@ void runWireframes(tetromino *copyTet) {
             }
         }
     }
+}
+
+void moveBoardDown(int remove) { //TODO: add sweeping animation to this
+    //start at the index and set each to the one above
+    for (int i = remove; i >= 2; i--) {
+        for (int j = 1; j <= 10; j++) {
+            app.filledBlocks[i][j] = app.filledBlocks[i-1][j];
+        }
+    }
+}
+
+/* This function runs once at startup. */
+SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
+    // -- setup --
+    app.width = 1000;
+    app.height = 750;
+    app.titleCard = true;
+    app.showWireframe = true;
+    app.heldtet = -1;
+    app.amountPressed = -1;
+
+    SDL_FRect temp4 = {0, 0, app.width, app.height};
+    pausedBackground = temp4;
+
+    // -- width and heights --
+    app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
+    app.bWidthMax = (app.width >> 1) + (6*TETROMINO_BLOCK_SIZE); // + 5
+
+    app.bHeightMin = (app.height >> 1) - (11*TETROMINO_BLOCK_SIZE); // - 10
+    app.bHeightMax = (app.height >> 1) + (11*TETROMINO_BLOCK_SIZE);; // + 10
+
+    halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
+    halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
+
+    setupTetrominos(&app);
+    setupTitleBlocks(&app);
+
+    // -- colours --
+    setColourDef(&colour[0], 0, 0, 255); //blue
+    setColourDef(&colour[1], 0, 255, 255); //turquoise
+    setColourDef(&colour[2], 0, 255, 0); //green
+    setColourDef(&colour[3], 255, 255, 0); //yellow
+    setColourDef(&colour[4], 255, 160, 0); //orange
+    setColourDef(&colour[5], 255, 0, 0); //red
+    setColourDef(&colour[6], 150, 0, 255); //purple
+
+    // -- border -- 
+    for (int i = 0; i < 22; i++) {
+        for (int j = 0; j < 12; j++) {
+            app.filledBlocks[i][j] = calloc(1, sizeof(setBlocks));
+            if (i == 0 || i == 21 || j == 0 || j == 11) {
+                app.filledBlocks[i][j]->v = true;
+                app.filledBlocks[i][j]->r = app.filledBlocks[i][j]->g = app.filledBlocks[i][j]->b = 125;
+            } else {
+                app.filledBlocks[i][j]->v = false;
+            }
+        }
+    }
+
+    // -- init --
+    SDL_SetAppMetadata("Play Tetis!", "1.1.2", "com/LKerr42/SDL-Tetris.github");
+
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    if (!TTF_Init()) {
+        SDL_Log("Couldn't initialize ttf: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    // -- window --
+    bool wind = SDL_CreateWindowAndRenderer(
+        "Play Tetris!", 
+        app.width, app.height, 
+        SDL_WINDOW_RESIZABLE,
+        &app.window, &app.renderer
+    );
+    if (!wind) {
+        SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    // -- icon --
+    icon = IMG_Load("assets/iconT.ico");
+    SDL_SetWindowIcon(app.window, icon);
+    SDL_DestroySurface(icon);
+
+    // -- keyboard image --
+    keyboardSurface = IMG_Load("assets/keyboard.png");
+    if (keyboardSurface == NULL) {
+        SDL_Log("Failed to load keyboardSurface: %s", SDL_GetError());
+    }
+    keyboard = SDL_CreateTextureFromSurface(app.renderer, keyboardSurface);
+    if (keyboard == NULL) {
+        SDL_Log("Failed to load keyboard: %s", SDL_GetError());
+    }
+
+    SDL_GetTextureSize(keyboard, &keyW, &keyH);
+
+    int intKeyH = (int)keyH, intKeyW = (int)keyW;
+
+    int keyX = (app.width >> 1) - (intKeyW >> 1);
+    int keyY = (app.height >> 1) - (intKeyH >> 1);
+
+    SDL_FRect temp = {keyX, keyY-5, intKeyW, intKeyH};
+    keyRect = temp;
+
+    // -- fonts -- 
+    app.globalFont = TTF_OpenFont("assets\\NES.ttf", 25);
+    if (app.globalFont == NULL) {
+        SDL_Log("Failed to load font app.globalFont: %s", SDL_GetError());
+    }
+
+    app.globalFontS = TTF_OpenFont("assets\\NES.ttf", 17);
+    if (app.globalFontS == NULL) {
+        SDL_Log("Failed to load font app.globalFontS: %s", SDL_GetError());
+    }
+
+    app.globalFontL = TTF_OpenFont("assets\\NES.ttf", 32);
+    if (app.globalFontL == NULL) {
+        SDL_Log("Failed to load font app.globalFontL: %s", SDL_GetError());
+    }
+
+    setupStaticText(&app);
+
+    // -- texture setup --
+    app.boardTexture = SDL_CreateTexture(
+        app.renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        12*TETROMINO_BLOCK_SIZE,
+        22*TETROMINO_BLOCK_SIZE
+    );
+    if (!app.boardTexture) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
+    buildBoardTexture(&app);
+
+    app.nextTexture = SDL_CreateTexture(
+        app.renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        TETROMINO_BLOCK_SIZE << 2,
+        (TETROMINO_BLOCK_SIZE << 3) + (TETROMINO_BLOCK_SIZE << 2)
+    );
+    if (!app.nextTexture) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
+    app.backgroundKeyboard  = SDL_CreateTexture(
+        app.renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        intKeyW, intKeyH
+    );
+    if (!app.backgroundKeyboard) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
+    app.keyboardText = SDL_CreateTexture(
+        app.renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        intKeyW, 100
+    );
+    if (!app.keyboardText) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
+    SDL_FRect temp2 = {keyX, keyY+intKeyH+5, intKeyW, 100};
+    keyboardTextRect = temp2;
+
+    // -- next blocks -- 
+    for (int k = 0; k < 4; k++) {
+        app.nextBlocks[k] = SDL_rand(7);
+    }
+
+    updateNextBlocks(&app);
+
+    // -- audio --
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        SDL_Log("SDL_Init AUDIO failed: %s", SDL_GetError());
+    }
+
+    char *wavPath = NULL;
+    for (int i = 0; i < SDL_arraysize(sfx); i++) {
+        SDL_asprintf(&wavPath, "%s%s.wav", "assets/audio/", fileNames[i]);
+        initaliseAudioFile(&sfx[i], wavPath);
+    }
+    initaliseAudioFile(&mainTheme, "assets/audio/Tetris.wav");
+    SDL_SetAudioStreamGain(mainTheme.stream, 0.5f);
+    SDL_SetAudioStreamGain(sfx[LAND].stream, 1.5f);
+
+    return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
@@ -605,15 +484,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
-void moveBoardDown(int remove) { //TODO: add sweeping animation to this
-    //start at the index and set each to the one above
-    for (int i = remove; i >= 2; i--) {
-        for (int j = 1; j <= 10; j++) {
-            app.filledBlocks[i][j] = app.filledBlocks[i-1][j];
-        }
-    }
-}
-
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 now = SDL_GetTicks();
@@ -663,7 +533,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Trect, app.titleTetroes[countB]->r, app.titleTetroes[countB]->g, app.titleTetroes[countB]->b);
+                        displayBlock(&app, Trect, app.titleTetroes[countB]->r, app.titleTetroes[countB]->g, app.titleTetroes[countB]->b);
                     }
                 }
             }
@@ -690,7 +560,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         displayStaticText(&app);
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
         if (firstRun == true) {
-            updateNextBlocks(); 
+            updateNextBlocks(&app); 
             firstRun = false;
             *app.currentTet = *app.tetArray[app.currentBlock];
             runWireframes(app.currentTet);
@@ -751,7 +621,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 app.currentTet->x = 4;
                 app.currentTet->y = 1;
                 
-                updateNextBlocks();
+                updateNextBlocks(&app);
 
                 //check if row filled
                 for (int l = 1; l <= 20; l++) {
@@ -809,10 +679,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
             lastFallTime = now;
         }
-
         
-        displayNextBlocks();
-        renderBoard();
+        displayNextBlocks(&app);
+        renderBoard(&app);
 
         //display falling tetromino
         for (int y = 0; y < 4; y++) {
@@ -826,7 +695,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         TETROMINO_BLOCK_SIZE,
                         TETROMINO_BLOCK_SIZE
                     };
-                    displayBlock(Brect, app.currentTet->r, app.currentTet->g, app.currentTet->b);
+                    displayBlock(&app, Brect, app.currentTet->r, app.currentTet->g, app.currentTet->b);
                 }
             }
         }
@@ -845,7 +714,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(Hrect, app.tetArray[app.heldtet]->r, app.tetArray[app.heldtet]->g, app.tetArray[app.heldtet]->b);
+                        displayBlock(&app, Hrect, app.tetArray[app.heldtet]->r, app.tetArray[app.heldtet]->g, app.tetArray[app.heldtet]->b);
                     }
                 }
             } 

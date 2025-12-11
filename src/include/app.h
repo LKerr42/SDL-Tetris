@@ -75,6 +75,7 @@ typedef struct appContext {
 
     //textures
     SDL_Texture *boardTexture;
+    SDL_Texture *nextTexture;
 
     //Three sizes of the global font
     TTF_Font* globalFont;
@@ -108,7 +109,5 @@ void runWireframes(struct tetromino *copyTet);
 void rotateTetrominoCCW(struct tetromino *t);
 void rotateTetrominoCW(struct tetromino *t);
 void resetGame();
-void updateNextBlocks();
-void displayBlockToTexture(SDL_FRect rect, int r, int g, int b, SDL_Texture* texture, bool isWireframe);
 
 #endif
