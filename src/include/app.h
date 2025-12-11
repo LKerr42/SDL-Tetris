@@ -6,6 +6,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 struct tetromino;
+struct setBlocks;
 
 /**
  * Pixel size of all blocks
@@ -72,6 +73,9 @@ typedef struct appContext {
     SDL_Texture *staticText;
     SDL_Texture *backgroundKeyboard;
 
+    //textures
+    SDL_Texture *boardTexture;
+
     //Three sizes of the global font
     TTF_Font* globalFont;
     TTF_Font* globalFontS;
@@ -81,10 +85,14 @@ typedef struct appContext {
     struct tetromino *currentTet;
     struct tetromino *tetArray[7];
     struct tetromino *titleTetroes[6];
+    struct tetromino *wireframeTet;
 
     //Control ints for next, held, and current tetroes
     int nextBlocks[4];
     int heldtet, currentBlock;
+
+    //Filled blocks data
+    struct setBlocks *filledBlocks[22][12];
 } appContext;
 
 /**
@@ -101,6 +109,6 @@ void rotateTetrominoCCW(struct tetromino *t);
 void rotateTetrominoCW(struct tetromino *t);
 void resetGame();
 void updateNextBlocks();
-void buildBoardTexture();
+void displayBlockToTexture(SDL_FRect rect, int r, int g, int b, SDL_Texture* texture, bool isWireframe);
 
 #endif

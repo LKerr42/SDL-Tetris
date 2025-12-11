@@ -73,6 +73,7 @@ void setupTetrominos(appContext *app) {
     setTetColour(app->tetArray[6], 255, 0, 0);   //Left squiggle
 
     app->currentTet = calloc(1, sizeof(struct tetromino));
+    app->wireframeTet = calloc(1, sizeof(struct tetromino));
 
     for (int count = 0; count < 7; count++) {
         for (int y = 0; y < 4; y++) {

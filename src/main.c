@@ -12,6 +12,7 @@
 #include "include/text.h"
 #include "include/keyboard.h"
 #include "include/tetromino.h"
+#include "include/renderer.h"
 
 //file specific globals
 bool firstRun = true;
@@ -32,19 +33,9 @@ char fileNames[9][16] = {
     "switch"
 };
 
+// Context for the whole app
 appContext app;
 
-typedef struct {
-    bool v;
-    int r;
-    int g;
-    int b;
-} setBlocks;
-setBlocks filledBlocks[22][12];
-
-tetromino wireframeTet;
-
-SDL_Texture *boardTexture;
 SDL_Texture *nextTexture;
 SDL_Surface *icon;
 
@@ -129,47 +120,6 @@ void displayBlockToTexture(SDL_FRect rect, int r, int g, int b, SDL_Texture* tex
     SDL_SetRenderTarget(app.renderer, NULL);
 }
 
-void buildBoardTexture() {
-    SDL_SetRenderTarget(app.renderer, boardTexture);
-
-    // Clear previous contents
-    SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 255);
-    SDL_RenderClear(app.renderer);
-
-    SDL_FRect rect;
-    rect.w = rect.h = TETROMINO_BLOCK_SIZE;
-
-    for (int i = 0; i < 22; i++) { 
-        for (int j = 0; j < 12; j++) {
-            if (filledBlocks[i][j].v == true) {
-                rect.x = j * TETROMINO_BLOCK_SIZE;
-                rect.y = i * TETROMINO_BLOCK_SIZE;
-
-                displayBlockToTexture(rect, filledBlocks[i][j].r, filledBlocks[i][j].g, filledBlocks[i][j].b, boardTexture, false);
-            }
-        }
-    }
-    if (app.showWireframe) {
-        for (int y = 0; y < 4; y++) {
-            for (int x = 0; x < 4; x++) {
-                if (wireframeTet.blocks[y][x].active) {
-                    int posX = wireframeTet.x + x;
-                    int posY = wireframeTet.y + y;
-                    SDL_FRect Brect = {
-                        posX * TETROMINO_BLOCK_SIZE,
-                        posY * TETROMINO_BLOCK_SIZE,
-                        TETROMINO_BLOCK_SIZE,
-                        TETROMINO_BLOCK_SIZE
-                    };
-                    displayBlockToTexture(Brect, wireframeTet.r, wireframeTet.g, wireframeTet.b, boardTexture, true);
-                }
-            }
-        }
-    }
-
-    SDL_SetRenderTarget(app.renderer, NULL);
-}
-
 //TODO: improve efficency by moving rect def to widow resize
 void renderBoard() {
     SDL_FRect displayRect = {
@@ -179,7 +129,7 @@ void renderBoard() {
         22*TETROMINO_BLOCK_SIZE
     };
 
-    SDL_RenderTexture(app.renderer, boardTexture, NULL, &displayRect);
+    SDL_RenderTexture(app.renderer, app.boardTexture, NULL, &displayRect);
 }
 
 void updateNextBlocks() {
@@ -237,6 +187,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_FRect temp4 = {0, 0, app.width, app.height};
     pausedBackground = temp4;
 
+    // -- width and heights --
     app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
     app.bWidthMax = (app.width >> 1) + (6*TETROMINO_BLOCK_SIZE); // + 5
 
@@ -249,6 +200,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     setupTetrominos(&app);
     setupTitleBlocks(&app);
 
+    // -- colours --
     setColourDef(&colour[0], 0, 0, 255); //blue
     setColourDef(&colour[1], 0, 255, 255); //turquoise
     setColourDef(&colour[2], 0, 255, 0); //green
@@ -260,11 +212,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     // -- border -- 
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
+            app.filledBlocks[i][j] = calloc(1, sizeof(setBlocks));
             if (i == 0 || i == 21 || j == 0 || j == 11) {
-                filledBlocks[i][j].v = true;
-                filledBlocks[i][j].r = filledBlocks[i][j].g = filledBlocks[i][j].b = 125;
+                app.filledBlocks[i][j]->v = true;
+                app.filledBlocks[i][j]->r = app.filledBlocks[i][j]->g = app.filledBlocks[i][j]->b = 125;
             } else {
-                filledBlocks[i][j].v = false;
+                app.filledBlocks[i][j]->v = false;
             }
         }
     }
@@ -338,18 +291,18 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     setupStaticText(&app);
 
     // -- texture setup --
-    boardTexture = SDL_CreateTexture(
+    app.boardTexture = SDL_CreateTexture(
         app.renderer,
         SDL_PIXELFORMAT_RGBA32,
         SDL_TEXTUREACCESS_TARGET,
         12*TETROMINO_BLOCK_SIZE,
         22*TETROMINO_BLOCK_SIZE
     );
-    if (!boardTexture) {
+    if (!app.boardTexture) {
         printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
     }
 
-    buildBoardTexture();
+    buildBoardTexture(&app);
 
     nextTexture = SDL_CreateTexture(
         app.renderer,
@@ -423,7 +376,7 @@ bool canMove(tetromino *t, int dx, int dy) {
                 }
 
                 // Check collisions with placed blocks
-                if (filledBlocks[newY][newX].v == true) {
+                if (app.filledBlocks[newY][newX]->v == true) {
                     return false;
                 }
             }
@@ -557,14 +510,14 @@ void resetBoard() {
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
             if (i == 0 || i == 21 || j == 0 || j == 11) {
-                filledBlocks[i][j].v = true;
-                filledBlocks[i][j].r = filledBlocks[i][j].g = filledBlocks[i][j].b = 125;
+                app.filledBlocks[i][j]->v = true;
+                app.filledBlocks[i][j]->r = app.filledBlocks[i][j]->g = app.filledBlocks[i][j]->b = 125;
             } else {
-                filledBlocks[i][j].v = false;
+                app.filledBlocks[i][j]->v = false;
             }
         }
     }
-    buildBoardTexture();
+    buildBoardTexture(&app);
     updateNextBlocks();
     displayNextBlocks();
     renderBoard();
@@ -589,12 +542,12 @@ void resetGame() {
 
 void runWireframes(tetromino *copyTet) {
     if (app.showWireframe) {
-        wireframeTet = *copyTet;
+        *app.wireframeTet = *copyTet;
         while (true) {
-            if (canMove(&wireframeTet, 0, 1)) {
-                wireframeTet.y += 1;
+            if (canMove(app.wireframeTet, 0, 1)) {
+                app.wireframeTet->y += 1;
             } else {
-                buildBoardTexture();
+                buildBoardTexture(&app);
                 break;
             }
         }
@@ -656,7 +609,7 @@ void moveBoardDown(int remove) { //TODO: add sweeping animation to this
     //start at the index and set each to the one above
     for (int i = remove; i >= 2; i--) {
         for (int j = 1; j <= 10; j++) {
-            filledBlocks[i][j] = filledBlocks[i-1][j];
+            app.filledBlocks[i][j] = app.filledBlocks[i-1][j];
         }
     }
 }
@@ -741,6 +694,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             firstRun = false;
             *app.currentTet = *app.tetArray[app.currentBlock];
             runWireframes(app.currentTet);
+            SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
+
         }
         displayText(&app, scoreString, (app.bWidthMax+20), (app.bHeightMin+49), app.globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
@@ -749,7 +704,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         if (app.amountPressedDown == 1) {
             lastPressDown++;
         } else if (app.amountPressedDown == 2) {
-            while (true) {
+            while (true) { 
                 if (canMove(app.currentTet, 0, 1)) {
                     app.currentTet->y += 1;
                 } else {
@@ -778,10 +733,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             posX = app.currentTet->x+app.currentTet->blocks[k][l].x;
                             posY = app.currentTet->y+app.currentTet->blocks[k][l].y;
 
-                            filledBlocks[posY][posX].v = true; 
-                            filledBlocks[posY][posX].r = app.currentTet->blocks[k][l].r; 
-                            filledBlocks[posY][posX].g = app.currentTet->blocks[k][l].g;
-                            filledBlocks[posY][posX].b = app.currentTet->blocks[k][l].b;
+                            app.filledBlocks[posY][posX]->v = true; 
+                            app.filledBlocks[posY][posX]->r = app.currentTet->blocks[k][l].r; 
+                            app.filledBlocks[posY][posX]->g = app.currentTet->blocks[k][l].g;
+                            app.filledBlocks[posY][posX]->b = app.currentTet->blocks[k][l].b;
                         }
                     }
                 }
@@ -802,7 +757,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 for (int l = 1; l <= 20; l++) {
                     countBlocks = 0;
                     for (int k = 1; k <= 10 ; k++) {
-                        if (filledBlocks[l][k].v == true) {
+                        if (app.filledBlocks[l][k]->v == true) {
                             countBlocks++;
                         }
                     }
@@ -840,11 +795,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     strcpy(scoreString, incompleteScore);
                 }
 
-                buildBoardTexture();
+                buildBoardTexture(&app);
 
                 //lose condition
                 for (int m = 1; m < 11; m++) {
-                    if (filledBlocks[1][m].v == true) {
+                    if (app.filledBlocks[1][m]->v == true) {
                         app.winning = false;
                         SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
                         break;
@@ -897,7 +852,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         }
 
         if (app.paused) {
-            SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);
@@ -918,16 +872,13 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-    SDL_free(app.renderer);
-    SDL_free(app.window);
-
-    SDL_DestroyTexture(boardTexture);
+    SDL_DestroyTexture(app.boardTexture);
     SDL_DestroyTexture(app.staticText);
     SDL_DestroyTexture(keyboard);
     SDL_DestroyTexture(app.keyboardText);
     for (int k = 0; k < 300; k++) {
         if (app.textArray != NULL) {
-            SDL_free(app.textArray->tex);
+            SDL_DestroyTexture(app.textArray->tex);
         }
     }
 
@@ -951,4 +902,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
             SDL_free(app.titleTetroes[j]);
         }
     }
+
+    SDL_DestroyRenderer(app.renderer);
+    SDL_DestroyWindow(app.window);
 }

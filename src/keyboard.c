@@ -3,6 +3,7 @@
 #include "include/app.h"
 #include "include/tetromino.h"
 #include "include/audio.h"
+#include "include/renderer.h"
 #include <stdio.h>
 
 void addKeyboardRects(appContext *app, int x, int y, int w, int h, bool down) {
@@ -532,7 +533,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             if (!app->paused) {
                 app->showWireframe = !app->showWireframe;
                 runWireframes(app->currentTet);
-                buildBoardTexture();
+                buildBoardTexture(app);
             }
             break;
         }
@@ -540,7 +541,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             if (!app->paused) {
                 app->showWireframe = !app->showWireframe;
                 runWireframes(app->currentTet);
-                buildBoardTexture();
+                buildBoardTexture(app);
             }
             break;
         }
