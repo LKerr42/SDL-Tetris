@@ -61,7 +61,7 @@ void setupTetrominos(appContext *app) {
     };
 
     for (int a = 0; a < 7; a++) {
-        app->tetArray[a] = calloc(1, sizeof(struct tetromino));
+        app->tetArray[a] = calloc(1, sizeof(tetromino));
     }
 
     setTetColour(app->tetArray[0], 0, 255, 255); //Long boy
@@ -72,8 +72,8 @@ void setupTetrominos(appContext *app) {
     setTetColour(app->tetArray[5], 150, 0, 255); //T boy
     setTetColour(app->tetArray[6], 255, 0, 0);   //Left squiggle
 
-    app->currentTet = calloc(1, sizeof(struct tetromino));
-    app->wireframeTet = calloc(1, sizeof(struct tetromino));
+    app->currentTet = calloc(1, sizeof(tetromino));
+    app->wireframeTet = calloc(1, sizeof(tetromino));
 
     for (int count = 0; count < 7; count++) {
         for (int y = 0; y < 4; y++) {

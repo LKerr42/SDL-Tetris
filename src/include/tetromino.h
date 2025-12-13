@@ -17,7 +17,6 @@ typedef struct {
     int b;
     bool active;
 } blockStruct;
-blockStruct block;
 
 /**
  * tetromino:
@@ -42,7 +41,7 @@ typedef struct {
     int g;
     int b;
 } colours;
-colours colour[7];
+extern colours colour[7];
 
 /**
  * Set the colour of a blockStruct instance

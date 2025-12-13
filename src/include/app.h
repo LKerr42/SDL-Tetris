@@ -5,8 +5,8 @@
 #include <SDL3/SDL_render.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-struct tetromino;
-struct setBlocks;
+typedef struct tetromino tetromino;
+typedef struct setBlocks setBlocks;
 
 /**
  * Pixel size of all blocks
@@ -83,17 +83,17 @@ typedef struct appContext {
     TTF_Font* globalFontL;
 
     //Pointers to the uses of tetromino struct
-    struct tetromino *currentTet;
-    struct tetromino *tetArray[7];
-    struct tetromino *titleTetroes[6];
-    struct tetromino *wireframeTet;
+    tetromino *currentTet;
+    tetromino *tetArray[7];
+    tetromino *titleTetroes[6];
+    tetromino *wireframeTet;
 
     //Control ints for next, held, and current tetroes
     int nextBlocks[4];
     int heldtet, currentBlock;
 
     //Filled blocks data
-    struct setBlocks *filledBlocks[22][12];
+    setBlocks *filledBlocks[22][12];
 } appContext;
 
 /**
@@ -104,10 +104,10 @@ typedef struct appContext {
  */
 void prependChar(char *str, char c);
 
-bool canMove(struct tetromino *t, int dx, int dy);
-void runWireframes(struct tetromino *copyTet);
-void rotateTetrominoCCW(struct tetromino *t);
-void rotateTetrominoCW(struct tetromino *t);
+bool canMove(tetromino *t, int dx, int dy);
+void runWireframes(tetromino *copyTet);
+void rotateTetrominoCCW(tetromino *t);
+void rotateTetrominoCW(tetromino *t);
 void resetGame();
 
 #endif

@@ -1,10 +1,12 @@
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_hints.h>
 #include <SDL3_image/SDL_image.h>
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <conio.h>
 
 #include "include/app.h"
 #include "include/audio.h"
@@ -15,12 +17,13 @@
 
 //file specific globals
 bool firstRun = true;
-char scoreString[7] = "0000000", *finalScore = NULL;
+char scoreString[7], *finalScore = NULL;
 int score = 0, currentMove = 0, currentColour = 1;
 int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
 float keyW, keyH;
 
 SDL_Surface *icon;
+colours colour[7];
 
 char fileNames[9][16] = {
     "clear",
@@ -258,6 +261,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_FRect temp4 = {0, 0, app.width, app.height};
     pausedBackground = temp4;
 
+    //SDL_SetHint(SDL_HINT_LOGGING, "1");
+
     // -- width and heights --
     app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
     app.bWidthMax = (app.width >> 1) + (6*TETROMINO_BLOCK_SIZE); // + 5
@@ -484,6 +489,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
+bool stepThrough = false;
+
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 now = SDL_GetTicks();
@@ -566,6 +573,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             runWireframes(app.currentTet);
             SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
 
+            sprintf(scoreString, "%s", "0000000");
+
         }
         displayText(&app, scoreString, (app.bWidthMax+20), (app.bHeightMin+49), app.globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
@@ -596,6 +605,13 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 app.currentTet->y += 1;
             } else if (!app.paused) {
                 startSound(&sfx[LAND]);
+            
+                if (stepThrough == true) {
+                    app.winning = false;
+                    SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
+                    stepThrough = false;
+                }
+
                 //set block
                 for (int k = 0; k < 4; k++) {
                     for (int l = 0; l < 4; l++) {
@@ -608,6 +624,30 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             app.filledBlocks[posY][posX]->g = app.currentTet->blocks[k][l].g;
                             app.filledBlocks[posY][posX]->b = app.currentTet->blocks[k][l].b;
                         }
+                    }
+                }
+            
+                //lose condition
+                for (int m = 1; m < 11; m++) {
+                    if (app.filledBlocks[1][m]->v == true) {
+                        stepThrough = true;
+
+                        printf("Current block: %d\n", app.currentBlock);
+                        printf("Current time: %llu\n", now);
+
+                        for (int i = 0; i < 22; i++) {
+                            for (int j = 0; j < 12; j++) {
+                                if (app.filledBlocks[i][j]->v == true) {
+                                    printf("X ");
+                                } else {
+                                    printf(". ");
+                                }
+                            }
+                            printf("\n");
+                        }
+                        printf("\n\n");
+
+                        break;
                     }
                 }
 
@@ -666,15 +706,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 }
 
                 buildBoardTexture(&app);
-
-                //lose condition
-                for (int m = 1; m < 11; m++) {
-                    if (app.filledBlocks[1][m]->v == true) {
-                        app.winning = false;
-                        SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
-                        break;
-                    }
-                }
             }
 
             lastFallTime = now;
