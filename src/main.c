@@ -56,12 +56,12 @@ bool canMove(tetromino *t, int dx, int dy) {
                 int newY = t->y + row + dy;
 
                 // Check walls (assuming 0..11 width and 0..21 height)
-                if (newX < 0 || newX >= 11 || newY >= 21) {
+                if (newX < 1 || newX > 11 || newY > 21) {
                     return false;
                 }
 
                 // Check collisions with placed blocks
-                if (app.filledBlocks[newY][newX]->v == true) {
+                if (app.filledBlocks[newY][newX].v == true) {
                     return false;
                 }
             }
@@ -82,7 +82,7 @@ void rotateTetrominoCCW(tetromino *t) {
         N = 3;
     }
 
-    for (Y = 0; Y < 4; Y++) { //FIX: the active, x and y variables have to be updated aswell
+    for (Y = 0; Y < 4; Y++) {
         for (X = 0; X < 4; X++) {
             temp[Y][X].active = false;
 
@@ -195,10 +195,10 @@ void resetBoard() {
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
             if (i == 0 || i == 21 || j == 0 || j == 11) {
-                app.filledBlocks[i][j]->v = true;
-                app.filledBlocks[i][j]->r = app.filledBlocks[i][j]->g = app.filledBlocks[i][j]->b = 125;
+                app.filledBlocks[i][j].v = true;
+                app.filledBlocks[i][j].r = app.filledBlocks[i][j].g = app.filledBlocks[i][j].b = 125;
             } else {
-                app.filledBlocks[i][j]->v = false;
+                app.filledBlocks[i][j].v = false;
             }
         }
     }
@@ -248,6 +248,42 @@ void moveBoardDown(int remove) { //TODO: add sweeping animation to this
     }
 }
 
+void closeApp() {
+    SDL_DestroyTexture(app.boardTexture);
+    SDL_DestroyTexture(app.staticText);
+    SDL_DestroyTexture(keyboard);
+    SDL_DestroyTexture(app.keyboardText);
+    for (int k = 0; k < 300; k++) {
+        if (app.textArray->tex != NULL) {
+            SDL_DestroyTexture(app.textArray->tex);
+        }
+    }
+
+    TTF_CloseFont(app.globalFont);
+    TTF_CloseFont(app.globalFontS);
+    TTF_Quit();
+
+    for (int i = 0; i < SDL_arraysize(sfx); i++) {
+        if (sfx[i].stream) {
+            SDL_DestroyAudioStream(sfx[i].stream);
+        }
+        SDL_free(sfx[i].audio_buff);
+    }
+    SDL_DestroyAudioStream(mainTheme.stream);
+    SDL_free(mainTheme.audio_buff);
+
+    SDL_free(app.currentTet);
+    for (int j = 0; j < 7; j++) {
+        SDL_free(app.tetArray[j]);
+        if (j < 6) {
+            SDL_free(app.titleTetroes[j]);
+        }
+    }
+    
+    SDL_DestroyRenderer(app.renderer);
+    SDL_DestroyWindow(app.window);
+}
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     // -- setup --
@@ -288,12 +324,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     // -- border -- 
     for (int i = 0; i < 22; i++) {
         for (int j = 0; j < 12; j++) {
-            app.filledBlocks[i][j] = calloc(1, sizeof(setBlocks));
             if (i == 0 || i == 21 || j == 0 || j == 11) {
-                app.filledBlocks[i][j]->v = true;
-                app.filledBlocks[i][j]->r = app.filledBlocks[i][j]->g = app.filledBlocks[i][j]->b = 125;
+                app.filledBlocks[i][j].v = true;
+                app.filledBlocks[i][j].r = app.filledBlocks[i][j].g = app.filledBlocks[i][j].b = 125;
             } else {
-                app.filledBlocks[i][j]->v = false;
+                app.filledBlocks[i][j].v = false;
             }
         }
     }
@@ -442,6 +477,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     switch (event->type) {
         case SDL_EVENT_QUIT: {
+            closeApp();
             return SDL_APP_SUCCESS; /* end the program, reporting success to the OS. */
             break;
         }
@@ -488,8 +524,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
-
-bool stepThrough = false;
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
@@ -605,13 +639,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 app.currentTet->y += 1;
             } else if (!app.paused) {
                 startSound(&sfx[LAND]);
-            
-                if (stepThrough == true) {
-                    app.winning = false;
-                    SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
-                    stepThrough = false;
-                }
-
+        
                 //set block
                 for (int k = 0; k < 4; k++) {
                     for (int l = 0; l < 4; l++) {
@@ -619,34 +647,19 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             posX = app.currentTet->x+app.currentTet->blocks[k][l].x;
                             posY = app.currentTet->y+app.currentTet->blocks[k][l].y;
 
-                            app.filledBlocks[posY][posX]->v = true; 
-                            app.filledBlocks[posY][posX]->r = app.currentTet->blocks[k][l].r; 
-                            app.filledBlocks[posY][posX]->g = app.currentTet->blocks[k][l].g;
-                            app.filledBlocks[posY][posX]->b = app.currentTet->blocks[k][l].b;
+                            app.filledBlocks[posY][posX].v = true; 
+                            app.filledBlocks[posY][posX].r = app.currentTet->blocks[k][l].r; 
+                            app.filledBlocks[posY][posX].g = app.currentTet->blocks[k][l].g;
+                            app.filledBlocks[posY][posX].b = app.currentTet->blocks[k][l].b;
                         }
                     }
                 }
             
                 //lose condition
                 for (int m = 1; m < 11; m++) {
-                    if (app.filledBlocks[1][m]->v == true) {
-                        stepThrough = true;
-
-                        printf("Current block: %d\n", app.currentBlock);
-                        printf("Current time: %llu\n", now);
-
-                        for (int i = 0; i < 22; i++) {
-                            for (int j = 0; j < 12; j++) {
-                                if (app.filledBlocks[i][j]->v == true) {
-                                    printf("X ");
-                                } else {
-                                    printf(". ");
-                                }
-                            }
-                            printf("\n");
-                        }
-                        printf("\n\n");
-
+                    if (app.filledBlocks[1][m].v == true) {
+                        app.winning = false;
+                        SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
                         break;
                     }
                 }
@@ -667,7 +680,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 for (int l = 1; l <= 20; l++) {
                     countBlocks = 0;
                     for (int k = 1; k <= 10 ; k++) {
-                        if (app.filledBlocks[l][k]->v == true) {
+                        if (app.filledBlocks[l][k].v == true) {
                             countBlocks++;
                         }
                     }
@@ -772,37 +785,5 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-    SDL_DestroyTexture(app.boardTexture);
-    SDL_DestroyTexture(app.staticText);
-    SDL_DestroyTexture(keyboard);
-    SDL_DestroyTexture(app.keyboardText);
-    for (int k = 0; k < 300; k++) {
-        if (app.textArray != NULL) {
-            SDL_DestroyTexture(app.textArray->tex);
-        }
-    }
-
-    TTF_CloseFont(app.globalFont);
-    TTF_CloseFont(app.globalFontS);
-    TTF_Quit();
-
-    for (int i = 0; i < SDL_arraysize(sfx); i++) {
-        if (sfx[i].stream) {
-            SDL_DestroyAudioStream(sfx[i].stream);
-        }
-        SDL_free(sfx[i].audio_buff);
-    }
-    SDL_DestroyAudioStream(mainTheme.stream);
-    SDL_free(mainTheme.audio_buff);
-
-    SDL_free(app.currentTet);
-    for (int j = 0; j < 7; j++) {
-        SDL_free(app.tetArray[j]);
-        if (j < 6) {
-            SDL_free(app.titleTetroes[j]);
-        }
-    }
-
-    SDL_DestroyRenderer(app.renderer);
-    SDL_DestroyWindow(app.window);
+    closeApp();
 }

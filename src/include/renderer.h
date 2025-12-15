@@ -8,17 +8,6 @@
 struct appContext;
 
 /**
- * setBlocks:
- * Data for rendering the board. The board is made up fo a 12x22 grid of these.
- */
-typedef struct setBlocks {
-    bool v;
-    int r;
-    int g;
-    int b;
-} setBlocks;
-
-/**
  * Display a block to the main renderer.
  * 
  * \param *app  Pointer to the app context

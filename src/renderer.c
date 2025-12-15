@@ -88,15 +88,15 @@ void buildBoardTexture(appContext *app) {
 
     for (int i = 0; i < 22; i++) { 
         for (int j = 0; j < 12; j++) {
-            if (app->filledBlocks[i][j]->v == true) {
+            if (app->filledBlocks[i][j].v == true) {
                 rect.x = j * TETROMINO_BLOCK_SIZE;
                 rect.y = i * TETROMINO_BLOCK_SIZE;
 
                 displayBlockToTexture(
                     app, rect, 
-                    app->filledBlocks[i][j]->r, 
-                    app->filledBlocks[i][j]->g, 
-                    app->filledBlocks[i][j]->b, 
+                    app->filledBlocks[i][j].r, 
+                    app->filledBlocks[i][j].g, 
+                    app->filledBlocks[i][j].b, 
                     app->boardTexture, false
                 );
             }

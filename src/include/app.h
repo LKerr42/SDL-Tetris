@@ -6,7 +6,6 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 typedef struct tetromino tetromino;
-typedef struct setBlocks setBlocks;
 
 /**
  * Pixel size of all blocks
@@ -44,6 +43,18 @@ typedef struct {
     SDL_Texture *tex;
     SDL_FRect dest;
 } textTexture;
+
+/**
+ * setBlocks:
+ * Data for rendering the board. The board is made up fo a 12x22 grid of these.
+ * Here because they break when used as pointers ngl.
+ */
+typedef struct setBlocks {
+    bool v;
+    int r;
+    int g;
+    int b;
+} setBlocks;
 
 /**
  * appContext:
@@ -93,7 +104,7 @@ typedef struct appContext {
     int heldtet, currentBlock;
 
     //Filled blocks data
-    setBlocks *filledBlocks[22][12];
+    setBlocks filledBlocks[22][12];
 } appContext;
 
 /**
