@@ -521,7 +521,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
                 updateNextBlocks(app);
                 runWireframes(app->currentTet);
                 break;
-            } else if (!app->paused) {
+            } else if (app->loseCard) {
                 startSound(&sfx[OPEN]);
                 restartMainTheme();
                 resetGame();

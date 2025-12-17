@@ -151,9 +151,3 @@ void setupStaticText(appContext *app) {
     SDL_DestroySurface(surface4);
     SDL_DestroySurface(combined);
 }
-
-void displayStaticText(appContext *app) {
-    // Get text dimensions
-    SDL_FRect textRect = {0, 0, app->textW, app->textH};
-    SDL_RenderTexture(app->renderer, app->staticText, NULL, &textRect);
-}

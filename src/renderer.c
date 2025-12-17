@@ -188,3 +188,9 @@ void updateNextBlocks(appContext *app) {
 
     SDL_SetRenderTarget(app->renderer, NULL); // back to screen
 }
+
+void displayStaticText(appContext *app) {
+    // Get text dimensions
+    SDL_FRect textRect = {0, 0, app->textW, app->textH};
+    SDL_RenderTexture(app->renderer, app->staticText, NULL, &textRect);
+}

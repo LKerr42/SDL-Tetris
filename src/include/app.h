@@ -36,6 +36,12 @@ typedef struct tetromino tetromino;
 #define min(X, Y) ((X) < (Y) ? (X) : (Y))
 
 /**
+ * Returns the number of elements of an array. 
+ * Must be an array the compiler knows the size of, no pointers
+ */
+#define arraySize(array) (sizeof(array) / sizeof(array[0]))
+
+/**
  * textTexture:
  * Represents an instance of a texture bundled with a destination rect
  */
@@ -47,7 +53,7 @@ typedef struct {
 /**
  * setBlocks:
  * Data for rendering the board. The board is made up fo a 12x22 grid of these.
- * Here because they break when used as pointers ngl.
+ * Located in app.h because they break when used as pointers ngl.
  */
 typedef struct setBlocks {
     bool v;
@@ -71,7 +77,7 @@ typedef struct appContext {
     float textW, textH; // Width and height of the static text
 
     //Control booleans
-    bool winning, keyboardCard, titleCard, showWireframe, paused;
+    bool winning, keyboardCard, titleCard, loseCard, showWireframe, paused;
 
     //Double press control counters
     Uint8 amountPressed, amountPressedDown;
@@ -83,6 +89,7 @@ typedef struct appContext {
     //static text and red backgrounds for keyboard texture
     SDL_Texture *staticText;
     SDL_Texture *backgroundKeyboard;
+    SDL_Texture *keyboard;
 
     //textures
     SDL_Texture *boardTexture;
@@ -114,6 +121,14 @@ typedef struct appContext {
  * \param c    Character to add
  */
 void prependChar(char *str, char c);
+
+/**
+ * Close the app and window.
+ * Frees all memory and pointers used by the app.
+ * 
+ * \param *str Pointer to the app context
+ */
+void closeApp(appContext *app);
 
 bool canMove(tetromino *t, int dx, int dy);
 void runWireframes(tetromino *copyTet);

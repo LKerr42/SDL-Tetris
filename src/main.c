@@ -40,7 +40,6 @@ char fileNames[9][16] = {
 // Context for the whole app
 appContext app;
 
-SDL_Texture *keyboard;
 SDL_Surface *keyboardSurface;
 SDL_FRect keyRect;
 
@@ -222,6 +221,7 @@ void resetGame() {
     app.currentTet->x = 4;
     app.currentTet->y = 1;
     app.winning = true;
+    app.loseCard = false;
     firstRun = true;
 }
 
@@ -246,42 +246,6 @@ void moveBoardDown(int remove) { //TODO: add sweeping animation to this
             app.filledBlocks[i][j] = app.filledBlocks[i-1][j];
         }
     }
-}
-
-void closeApp() {
-    SDL_DestroyTexture(app.boardTexture);
-    SDL_DestroyTexture(app.staticText);
-    SDL_DestroyTexture(keyboard);
-    SDL_DestroyTexture(app.keyboardText);
-    for (int k = 0; k < 300; k++) {
-        if (app.textArray->tex != NULL) {
-            SDL_DestroyTexture(app.textArray->tex);
-        }
-    }
-
-    TTF_CloseFont(app.globalFont);
-    TTF_CloseFont(app.globalFontS);
-    TTF_Quit();
-
-    for (int i = 0; i < SDL_arraysize(sfx); i++) {
-        if (sfx[i].stream) {
-            SDL_DestroyAudioStream(sfx[i].stream);
-        }
-        SDL_free(sfx[i].audio_buff);
-    }
-    SDL_DestroyAudioStream(mainTheme.stream);
-    SDL_free(mainTheme.audio_buff);
-
-    SDL_free(app.currentTet);
-    for (int j = 0; j < 7; j++) {
-        SDL_free(app.tetArray[j]);
-        if (j < 6) {
-            SDL_free(app.titleTetroes[j]);
-        }
-    }
-    
-    SDL_DestroyRenderer(app.renderer);
-    SDL_DestroyWindow(app.window);
 }
 
 /* This function runs once at startup. */
@@ -368,12 +332,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     if (keyboardSurface == NULL) {
         SDL_Log("Failed to load keyboardSurface: %s", SDL_GetError());
     }
-    keyboard = SDL_CreateTextureFromSurface(app.renderer, keyboardSurface);
-    if (keyboard == NULL) {
+    app.keyboard = SDL_CreateTextureFromSurface(app.renderer, keyboardSurface);
+    if (app.keyboard == NULL) {
         SDL_Log("Failed to load keyboard: %s", SDL_GetError());
     }
 
-    SDL_GetTextureSize(keyboard, &keyW, &keyH);
+    SDL_GetTextureSize(app.keyboard, &keyW, &keyH);
 
     int intKeyH = (int)keyH, intKeyW = (int)keyW;
 
@@ -477,7 +441,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     switch (event->type) {
         case SDL_EVENT_QUIT: {
-            closeApp();
             return SDL_APP_SUCCESS; /* end the program, reporting success to the OS. */
             break;
         }
@@ -582,7 +545,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     } else if (app.keyboardCard) {
         SDL_RenderTexture(app.renderer, app.keyboardText, NULL, &keyboardTextRect);
         SDL_RenderTexture(app.renderer, app.backgroundKeyboard, NULL, &keyRect);
-        SDL_RenderTexture(app.renderer, keyboard, NULL, &keyRect);
+        SDL_RenderTexture(app.renderer, app.keyboard, NULL, &keyRect);
         if (app.amountPressed == 1) {
             lastPress++;
         } else if (app.amountPressed == 2) {
@@ -659,6 +622,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 for (int m = 1; m < 11; m++) {
                     if (app.filledBlocks[1][m].v == true) {
                         app.winning = false;
+                        app.loseCard = true;
                         SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
                         break;
                     }
@@ -769,7 +733,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);
         } 
-    } else if (app.titleCard == false) { //lose card
+    } else if (app.loseCard) {
         SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
         SDL_RenderClear(app.renderer);
         bool displayed = false;
@@ -785,5 +749,5 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-    closeApp();
+    closeApp(&app);
 }

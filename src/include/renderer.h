@@ -59,4 +59,11 @@ void updateNextBlocks(struct appContext *app);
  */
 void displayNextBlocks(struct appContext *app);
 
+/**
+ * Render the main game text to the screen.
+ * 
+ * \param *app Pointer to the app context.
+ */
+void displayStaticText(struct appContext *app);
+
 #endif

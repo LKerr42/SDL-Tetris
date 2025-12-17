@@ -38,11 +38,4 @@ void writeToKeyboardText(appContext *app, char mainStr[], char subStr[], bool wr
  */
 void setupStaticText(appContext *app);
 
-/**
- * Display the static text, run each frame
- * 
- * \param *app Pointer to the main context
- */
-void displayStaticText(appContext *app);
-
 #endif
