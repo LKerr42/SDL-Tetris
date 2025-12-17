@@ -4,6 +4,7 @@
 #include "include/tetromino.h"
 #include "include/audio.h"
 #include "include/renderer.h"
+#include "include/game_control.h"
 #include <stdio.h>
 
 void addKeyboardRects(appContext *app, int x, int y, int w, int h, bool down) {
@@ -479,7 +480,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             if (app->winning && !app->paused) {
                 restartMainTheme();
                 runWireframes(app->currentTet);
-                resetGame();
+                resetGame(app);
                 startSound(&sfx[OPEN]);
             }
             break;
@@ -524,7 +525,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             } else if (app->loseCard) {
                 startSound(&sfx[OPEN]);
                 restartMainTheme();
-                resetGame();
+                resetGame(app);
                 break;
             }
             break;

@@ -77,10 +77,14 @@ typedef struct appContext {
     float textW, textH; // Width and height of the static text
 
     //Control booleans
-    bool winning, keyboardCard, titleCard, loseCard, showWireframe, paused;
+    bool winning, keyboardCard, titleCard, loseCard, showWireframe, paused, firstRun;
 
     //Double press control counters
     Uint8 amountPressed, amountPressedDown;
+
+    //Score controls
+    char scoreString[7];
+    int score;
 
     //array of all the text textures in the control menu and its main texture
     textTexture textArray[300];
@@ -134,6 +138,5 @@ bool canMove(tetromino *t, int dx, int dy);
 void runWireframes(tetromino *copyTet);
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
-void resetGame();
 
 #endif

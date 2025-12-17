@@ -1,12 +1,10 @@
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <SDL3/SDL_hints.h>
 #include <SDL3_image/SDL_image.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>
 
 #include "include/app.h"
 #include "include/audio.h"
@@ -14,17 +12,13 @@
 #include "include/keyboard.h"
 #include "include/tetromino.h"
 #include "include/renderer.h"
+#include "include/game_control.h"
+
+// Context for the whole app
+appContext app;
 
 //file specific globals
-bool firstRun = true;
-char scoreString[7], *finalScore = NULL;
-int score = 0, currentMove = 0, currentColour = 1;
-int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
-float keyW, keyH;
-
-SDL_Surface *icon;
-colours colour[7];
-
+char *finalScore = NULL;
 char fileNames[9][16] = {
     "clear",
     "holyMoly",
@@ -37,14 +31,18 @@ char fileNames[9][16] = {
     "switch"
 };
 
-// Context for the whole app
-appContext app;
+int currentMove = 0, currentColour = 1;
+int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
+float keyW, keyH;
 
+SDL_Surface *icon;
 SDL_Surface *keyboardSurface;
-SDL_FRect keyRect;
 
+SDL_FRect keyRect;
 SDL_FRect keyboardTextRect;
 SDL_FRect pausedBackground;
+
+colours colour[7];
 
 bool canMove(tetromino *t, int dx, int dy) {
     for (int row = 0; row < 4; row++) {
@@ -190,41 +188,6 @@ void rotateTetrominoCW(tetromino *t) {
     }
 }
 
-void resetBoard() {
-    for (int i = 0; i < 22; i++) {
-        for (int j = 0; j < 12; j++) {
-            if (i == 0 || i == 21 || j == 0 || j == 11) {
-                app.filledBlocks[i][j].v = true;
-                app.filledBlocks[i][j].r = app.filledBlocks[i][j].g = app.filledBlocks[i][j].b = 125;
-            } else {
-                app.filledBlocks[i][j].v = false;
-            }
-        }
-    }
-    buildBoardTexture(&app);
-    updateNextBlocks(&app);
-    displayNextBlocks(&app);
-    renderBoard(&app);
-}
-
-void resetGame() {
-    resetBoard();
-    for (int i = 0; i < 7; i++) {
-        scoreString[i] = '0';
-        if (i < 4) {
-            app.nextBlocks[i] = SDL_rand(7);
-        }
-    }
-    score = 0;
-    app.heldtet = -1;
-    app.currentBlock = 0;
-    app.currentTet->x = 4;
-    app.currentTet->y = 1;
-    app.winning = true;
-    app.loseCard = false;
-    firstRun = true;
-}
-
 void runWireframes(tetromino *copyTet) {
     if (app.showWireframe) {
         *app.wireframeTet = *copyTet;
@@ -250,18 +213,18 @@ void moveBoardDown(int remove) { //TODO: add sweeping animation to this
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
-    // -- setup --
+    // -- app setup --
     app.width = 1000;
     app.height = 750;
+    app.score = 0;
     app.titleCard = true;
     app.showWireframe = true;
+    app.firstRun = true;
     app.heldtet = -1;
     app.amountPressed = -1;
 
     SDL_FRect temp4 = {0, 0, app.width, app.height};
     pausedBackground = temp4;
-
-    //SDL_SetHint(SDL_HINT_LOGGING, "1");
 
     // -- width and heights --
     app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
@@ -273,6 +236,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
 
+    // -- setup tetrominoes --
     setupTetrominos(&app);
     setupTitleBlocks(&app);
 
@@ -563,17 +527,17 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     } else if (app.winning) { 
         displayStaticText(&app);
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
-        if (firstRun == true) {
+        if (app.firstRun == true) {
             updateNextBlocks(&app); 
-            firstRun = false;
+            app.firstRun = false;
             *app.currentTet = *app.tetArray[app.currentBlock];
             runWireframes(app.currentTet);
             SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
 
-            sprintf(scoreString, "%s", "0000000");
+            sprintf(app.scoreString, "%s", "0000000");
 
         }
-        displayText(&app, scoreString, (app.bWidthMax+20), (app.bHeightMin+49), app.globalFont, 255, 255, 255);
+        displayText(&app, app.scoreString, (app.bWidthMax+20), (app.bHeightMin+49), app.globalFont, 255, 255, 255);
         int countBlocks = 0, linesCleared = 0;
         char incompleteScore[7];
 
@@ -623,7 +587,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     if (app.filledBlocks[1][m].v == true) {
                         app.winning = false;
                         app.loseCard = true;
-                        SDL_asprintf(&finalScore, "Final Score: %s", scoreString);
+                        SDL_asprintf(&finalScore, "Final Score: %s", app.scoreString);
                         break;
                     }
                 }
@@ -661,25 +625,25 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     startSound(&sfx[CLEAR]);
                     switch (linesCleared) {
                         case 1:
-                            score += 40;
+                            app.score += 40;
                             break;
                         case 2:
-                            score += 100;
+                            app.score += 100;
                             break;
                         case 3:
-                            score += 300;
+                            app.score += 300;
                             break;
                         case 4:
-                            score += 1200;
+                            app.score += 1200;
                             break;
                     }
 
                     //update string
-                    sprintf(incompleteScore, "%d", score);
+                    sprintf(incompleteScore, "%d", app.score);
                     while (strlen(incompleteScore) != 7) {
                         prependChar(incompleteScore, '0');
                     }
-                    strcpy(scoreString, incompleteScore);
+                    strcpy(app.scoreString, incompleteScore);
                 }
 
                 buildBoardTexture(&app);
