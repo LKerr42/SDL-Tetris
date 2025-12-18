@@ -134,7 +134,4 @@ void prependChar(char *str, char c);
  */
 void closeApp(appContext *app);
 
-void rotateTetrominoCCW(tetromino *t);
-void rotateTetrominoCW(tetromino *t);
-
 #endif

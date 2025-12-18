@@ -1,4 +1,5 @@
 #include "include/game_control.h"
+#include "include/audio.h"
 #include "include/app.h"
 #include "include/tetromino.h"
 #include "include/renderer.h"
@@ -73,4 +74,134 @@ bool canMove(appContext *app, tetromino *t, int dx, int dy) {
         }
     }
     return true;
+}
+
+void rotateTetrominoCCW(appContext *app, tetromino *t) {
+    startSound(&sfx[SPINCCW]);
+    int N, Y, X, rx, ry;
+    blockStruct temp[4][4];
+    if (app->currentBlock == 0) {
+        N = 4;
+    } else if (app->currentBlock == 3) {
+        N = 2;
+    } else {
+        N = 3;
+    }
+
+    for (Y = 0; Y < 4; Y++) {
+        for (X = 0; X < 4; X++) {
+            temp[Y][X].active = false;
+
+            temp[Y][X].x = X;
+            temp[Y][X].y = Y;
+
+            temp[Y][X].r = t->r;
+            temp[Y][X].g = t->g;
+            temp[Y][X].b = t->b;
+        }
+    }
+
+    for (Y = 0; Y < N; Y++) { 
+        for (X = 0; X < N; X++) {
+            blockStruct src = t->blocks[Y][X];
+
+            rx = Y;
+            ry = 1 - (X - (N - 2));
+
+            temp[ry][rx] = src;
+
+            temp[ry][rx].x = rx;
+            temp[ry][rx].y = ry;
+
+            temp[ry][rx].r = t->r;
+            temp[ry][rx].g = t->g;
+            temp[ry][rx].b = t->b;
+        }
+    }
+
+    for (Y = 0; Y < 4; Y++) {
+        for (X = 0; X < 4; X++) {
+            t->blocks[Y][X] = temp[Y][X];
+        }
+    }
+
+    if (!canMove(app, t, 0, 0)) {
+        if (canMove(app, t, 1, 0)) {
+            t->x += 1;
+        } else if (canMove(app, t, -1, 0)) {
+            t->x -= 1;
+        } else {
+            rotateTetrominoCW(app, t);
+        }
+    }
+}
+
+void rotateTetrominoCW(appContext *app, tetromino *t) {
+    startSound(&sfx[SPINCW]);
+    int N, Y, X;
+    blockStruct temp[4][4];
+    if (app->currentBlock == 0) {
+        N = 4;
+    } else if (app->currentBlock == 3) {
+        N = 2;
+    } else {
+        N = 3;
+    }
+
+    for (Y = 0; Y < 4; Y++) { //FIX: the active, x and y variables have to be updated aswell
+        for (X = 0; X < 4; X++) {
+            temp[Y][X].active = false;
+
+            temp[Y][X].x = X;
+            temp[Y][X].y = Y;
+
+            temp[Y][X].r = t->r;
+            temp[Y][X].g = t->g;
+            temp[Y][X].b = t->b;
+        }
+    }
+
+    for (Y = 0; Y < N; Y++) { 
+        for (X = 0; X < N; X++) {
+            blockStruct src = t->blocks[Y][X];
+
+            int rx = 1 - (Y - (N - 2));
+            int ry = X;
+
+            temp[ry][rx] = src;
+
+            temp[ry][rx].x = rx;
+            temp[ry][rx].y = ry;
+
+            temp[ry][rx].r = t->r;
+            temp[ry][rx].g = t->g;
+            temp[ry][rx].b = t->b;
+        }
+    }
+
+    for (Y = 0; Y < 4; Y++) {
+        for (X = 0; X < 4; X++) {
+            t->blocks[Y][X] = temp[Y][X];
+        }
+    }
+
+
+    if (!canMove(app, t, 0, 0)) {
+        if (canMove(app, t, 1, 0)) {
+            t->x += 1;
+        } else if (canMove(app, t, -1, 0)) {
+            t->x -= 1;
+        } else {
+            rotateTetrominoCCW(app, t);
+        }
+    }
+}
+
+void moveBoardDown(appContext *app, int remove) { //TODO: add sweeping animation to this
+    //start at the index and set each to the one above
+    for (int i = remove; i >= 2; i--) {
+        for (int j = 1; j <= 10; j++) {
+            app->filledBlocks[i][j] = app->filledBlocks[i-1][j];
+        }
+    }
 }

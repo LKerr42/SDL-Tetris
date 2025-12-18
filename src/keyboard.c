@@ -47,7 +47,7 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
             break;
         }
         case SDL_SCANCODE_R: {
-            writeToKeyboardText(app, "-R-", "", pressing, SDL_SCANCODE_R);
+            writeToKeyboardText(app, "-R-", "Tap to reset the game", pressing, SDL_SCANCODE_R);
             addKeyboardRects(app, 25, 9, 5, 7, pressing);
             break;
         }
@@ -218,7 +218,7 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
         
         // -- top row --
         case SDL_SCANCODE_ESCAPE: {
-            writeToKeyboardText(app, "-Esc-", "", pressing, SDL_SCANCODE_ESCAPE);
+            writeToKeyboardText(app, "-Esc-", "Tap to exit app", pressing, SDL_SCANCODE_ESCAPE);
             addKeyboardRects(app, 1, 1, 6, 3, pressing);
             break;
         }
@@ -464,14 +464,14 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
         }
         case SDL_SCANCODE_D: {
             if (!app->paused) {
-                rotateTetrominoCW(app->currentTet); 
+                rotateTetrominoCW(app, app->currentTet); 
                 runWireframes(app, app->currentTet);
             }
             break;
         }
         case SDL_SCANCODE_A: {
             if (!app->paused) {
-                rotateTetrominoCCW(app->currentTet);
+                rotateTetrominoCCW(app, app->currentTet);
                 runWireframes(app, app->currentTet);
             }
             break;
@@ -551,6 +551,11 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
                 app->paused = !app->paused;
             }
             break;
+        }
+        case SDL_SCANCODE_ESCAPE: {
+            SDL_Event quit_event = {0};
+            quit_event.type = SDL_EVENT_QUIT;
+            SDL_PushEvent(&quit_event);
         }
     }
 }
