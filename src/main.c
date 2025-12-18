@@ -451,7 +451,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         }
                     }
                     if (countBlocks == 10) {
-                        //moveBoardDown(&app, l);
                         pushBackToLinesArray(&app, l);
                         linesCleared++;
                     }

@@ -197,7 +197,13 @@ void displayStaticText(appContext *app) {
 }
 
 void displayLineClearColumns(appContext *app) {
-    printf("Displaying column %d\n", app->clearInst.column);
+    if (app->clearInst.rows[1] != -1) {
+        printf("Displaying column %d\n", app->clearInst.column);
+    } else {
+        printf("-- ERROR -- Error displaying column at %d\n", app->clearInst.column);
+    }
+
+    SDL_SetRenderTarget(app->renderer, app->boardTexture);
     /*SDL_FRect columnRect = {
         app->bWidthMin + (TETROMINO_BLOCK_SIZE * app->clearInst.column),
         app->bHeightMin + (TETROMINO_BLOCK_SIZE * app->clearInst.rows[0]),
@@ -206,11 +212,13 @@ void displayLineClearColumns(appContext *app) {
     };*/
     SDL_FRect columnRect = {
         TETROMINO_BLOCK_SIZE * app->clearInst.column,
-        0,
+        TETROMINO_BLOCK_SIZE * app->clearInst.rows[1],
         TETROMINO_BLOCK_SIZE, 
-        TETROMINO_BLOCK_SIZE
+        TETROMINO_BLOCK_SIZE * app->clearInst.amountLines
     };
-    SDL_SetRenderDrawColor(app->renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
 
     SDL_RenderFillRect(app->renderer, &columnRect);
+
+    SDL_SetRenderTarget(app->renderer, NULL);
 }

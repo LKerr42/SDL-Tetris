@@ -198,13 +198,18 @@ void rotateTetrominoCW(appContext *app, tetromino *t) {
     }
 }
 
-void moveBoardDown(appContext *app, int remove) { //TODO: add sweeping animation to this
+void moveLineDown(appContext *app, int remove) {
     //start at the index and set each to the one above
-    //TODO: update this to work with the new struct (all lines at once) and move to the end of the update function
     for (int i = remove; i >= 2; i--) {
         for (int j = 1; j <= 10; j++) {
             app->filledBlocks[i][j] = app->filledBlocks[i-1][j];
         }
+    }
+}
+
+void moveBoardDown(appContext *app) {
+    for (int i = app->clearInst.rows[1]; i <= getHighestLine(app); i++) {
+        moveLineDown(app, i);
     }
 }
 
@@ -228,6 +233,14 @@ bool pushBackToLinesArray(appContext *app, int value) {
     return false;
 }
 
+int getHighestLine(appContext *app) {
+    int maximum = 0;
+    for (int i = 1; i < 5; i++) {
+        maximum = max(app->clearInst.rows[i], maximum);
+    }
+    return maximum;
+}
+
 void startLineClear(appContext *app) {
     printf("Starting line clear\n");
     app->clearInst.active = true;
@@ -246,9 +259,12 @@ void updateLineClear(appContext *app, uint64_t now) {
         app->clearInst.column++;
         app->clearInst.lastStep = now;
 
-        if (app->clearInst.column == 11) {
+        if (app->clearInst.column == 12) {
             app->paused = false;
+            moveBoardDown(app);
+            runWireframes(app, app->currentTet);
             clearLinesStruct(app);
+            buildBoardTexture(app);
         }
     }
 }

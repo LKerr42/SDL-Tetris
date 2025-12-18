@@ -56,16 +56,18 @@ void rotateTetrominoCW(appContext *app, tetromino *t);
 void rotateTetrominoCCW(appContext *app, tetromino *t);
 
 /**
- * Remove a column in the board and move everything else down.
+ * Remove a row in the board and move everything else down.
  * 
  * \param *app   Pointer to the app context
- * \param remove Column indexed by array index to remove
+ * \param remove Row indexed by array index to remove
  */
-void moveBoardDown(appContext *app, int remove);
+void moveLineDown(appContext *app, int remove);
 
 void clearLinesStruct(appContext *app);
 bool pushBackToLinesArray(appContext *app, int value);
 void startLineClear(appContext *app);
 void updateLineClear(appContext *app, uint64_t now);
+int getHighestLine(appContext *app);
+
 
 #endif
