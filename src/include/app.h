@@ -95,7 +95,7 @@ typedef struct appContext {
     SDL_Texture *backgroundKeyboard;
     SDL_Texture *keyboard;
 
-    //textures
+    //baord and ui textures
     SDL_Texture *boardTexture;
     SDL_Texture *nextTexture;
 
@@ -134,8 +134,6 @@ void prependChar(char *str, char c);
  */
 void closeApp(appContext *app);
 
-bool canMove(tetromino *t, int dx, int dy);
-void runWireframes(tetromino *copyTet);
 void rotateTetrominoCCW(tetromino *t);
 void rotateTetrominoCW(tetromino *t);
 

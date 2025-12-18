@@ -18,6 +18,10 @@
 appContext app;
 
 //file specific globals
+int currentMove = 0, currentColour = 1;
+int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
+float keyW, keyH;
+
 char *finalScore = NULL;
 char fileNames[9][16] = {
     "clear",
@@ -31,10 +35,6 @@ char fileNames[9][16] = {
     "switch"
 };
 
-int currentMove = 0, currentColour = 1;
-int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
-float keyW, keyH;
-
 SDL_Surface *icon;
 SDL_Surface *keyboardSurface;
 
@@ -43,29 +43,6 @@ SDL_FRect keyboardTextRect;
 SDL_FRect pausedBackground;
 
 colours colour[7];
-
-bool canMove(tetromino *t, int dx, int dy) {
-    for (int row = 0; row < 4; row++) {
-        for (int col = 0; col < 4; col++) {
-            blockStruct *b = &t->blocks[row][col];
-            if (b->active) {
-                int newX = t->x + col + dx;
-                int newY = t->y + row + dy;
-
-                // Check walls (assuming 0..11 width and 0..21 height)
-                if (newX < 1 || newX > 11 || newY > 21) {
-                    return false;
-                }
-
-                // Check collisions with placed blocks
-                if (app.filledBlocks[newY][newX].v == true) {
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
-}
 
 void rotateTetrominoCCW(tetromino *t) {
     startSound(&sfx[SPINCCW]);
@@ -116,10 +93,10 @@ void rotateTetrominoCCW(tetromino *t) {
         }
     }
 
-    if (!canMove(t, 0, 0)) {
-        if (canMove(t, 1, 0)) {
+    if (!canMove(&app, t, 0, 0)) {
+        if (canMove(&app, t, 1, 0)) {
             t->x += 1;
-        } else if (canMove(t, -1, 0)) {
+        } else if (canMove(&app, t, -1, 0)) {
             t->x -= 1;
         } else {
             rotateTetrominoCW(t);
@@ -177,27 +154,13 @@ void rotateTetrominoCW(tetromino *t) {
     }
 
 
-    if (!canMove(t, 0, 0)) {
-        if (canMove(t, 1, 0)) {
+    if (!canMove(&app, t, 0, 0)) {
+        if (canMove(&app, t, 1, 0)) {
             t->x += 1;
-        } else if (canMove(t, -1, 0)) {
+        } else if (canMove(&app, t, -1, 0)) {
             t->x -= 1;
         } else {
             rotateTetrominoCCW(t);
-        }
-    }
-}
-
-void runWireframes(tetromino *copyTet) {
-    if (app.showWireframe) {
-        *app.wireframeTet = *copyTet;
-        while (true) {
-            if (canMove(app.wireframeTet, 0, 1)) {
-                app.wireframeTet->y += 1;
-            } else {
-                buildBoardTexture(&app);
-                break;
-            }
         }
     }
 }
@@ -531,7 +494,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             updateNextBlocks(&app); 
             app.firstRun = false;
             *app.currentTet = *app.tetArray[app.currentBlock];
-            runWireframes(app.currentTet);
+            runWireframes(&app, app.currentTet);
             SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
 
             sprintf(app.scoreString, "%s", "0000000");
@@ -545,7 +508,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             lastPressDown++;
         } else if (app.amountPressedDown == 2) {
             while (true) { 
-                if (canMove(app.currentTet, 0, 1)) {
+                if (canMove(&app, app.currentTet, 0, 1)) {
                     app.currentTet->y += 1;
                 } else {
                     break;
@@ -562,7 +525,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
         if (now - lastFallTime >= 1000) {
             //check if any are above a set block
-            if (canMove(app.currentTet, 0, 1) && !app.paused) {
+            if (canMove(&app, app.currentTet, 0, 1) && !app.paused) {
                 app.currentTet->y += 1;
             } else if (!app.paused) {
                 startSound(&sfx[LAND]);
@@ -618,7 +581,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     }
                 }
 
-                runWireframes(app.currentTet);
+                runWireframes(&app, app.currentTet);
 
                 //update score
                 if (linesCleared > 0) {

@@ -37,3 +37,40 @@ void resetGame(appContext *app) {
     app->loseCard = false;
     app->firstRun = true;
 }
+
+void runWireframes(appContext *app, tetromino *copyTet) {
+    if (app->showWireframe) {
+        *app->wireframeTet = *copyTet;
+        while (true) {
+            if (canMove(app, app->wireframeTet, 0, 1)) {
+                app->wireframeTet->y += 1;
+            } else {
+                buildBoardTexture(app);
+                break;
+            }
+        }
+    }
+}
+
+bool canMove(appContext *app, tetromino *t, int dx, int dy) {
+    for (int row = 0; row < 4; row++) {
+        for (int col = 0; col < 4; col++) {
+            blockStruct *b = &t->blocks[row][col];
+            if (b->active) {
+                int newX = t->x + col + dx;
+                int newY = t->y + row + dy;
+
+                // Check walls (assuming 0..11 width and 0..21 height)
+                if (newX < 1 || newX > 11 || newY > 21) {
+                    return false;
+                }
+
+                // Check collisions with placed blocks
+                if (app->filledBlocks[newY][newX].v == true) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
