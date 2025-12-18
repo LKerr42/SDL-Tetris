@@ -10,10 +10,9 @@ for %%f in (src\*.c) do (
 )
 
 REM Compile the program
-REM 
+REM    -ffunction-sections -fdata-sections -Wl,--subsystem,windows ^
 REM -fstack-protector-all
 gcc -g -O0 !SOURCES! resources.o -o tetris.exe ^
-    -ffunction-sections -fdata-sections -Wl,--subsystem,windows ^
     -I "C:\Users\LiamK\Documents\Uni\SDL\x86_64-w64-mingw32\include" ^
     -I "C:\Users\LiamK\Documents\Uni\SDL3_ttf\x86_64-w64-mingw32\include" ^
     -I "C:\Users\LiamK\Documents\Uni\SDL3_image\x86_64-w64-mingw32\include" ^

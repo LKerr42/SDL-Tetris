@@ -547,8 +547,9 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             break;
         }
         case SDL_SCANCODE_P: {
-            if (app->winning) {
+            if (app->winning && !(app->paused && !app->userPause)) {
                 app->paused = !app->paused;
+                app->userPause = !app->userPause;
             }
             break;
         }
@@ -556,6 +557,12 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             SDL_Event quit_event = {0};
             quit_event.type = SDL_EVENT_QUIT;
             SDL_PushEvent(&quit_event);
+        }
+        case SDL_SCANCODE_O: {
+            if (app->winning) {
+                app->paused = !app->paused;
+                app->userPause = false;
+            }
         }
     }
 }

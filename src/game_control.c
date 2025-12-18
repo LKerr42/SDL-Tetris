@@ -205,3 +205,20 @@ void moveBoardDown(appContext *app, int remove) { //TODO: add sweeping animation
         }
     }
 }
+
+void clearLinesArray(lineClearAnim *clearData) {
+    clearData->rows[0] = 67;
+    for (int i = 1; i < 5; i++) {
+        clearData->rows[i] = -1;
+    }
+}
+
+bool pushBackToLinesArray(lineClearAnim *clearData, int value) {
+    for (int i = 5; i >= 1; i--) {
+        if (clearData->rows[i-1] != -1) {
+            clearData->rows[i] = value;
+            return true;
+        } 
+    }
+    return false;
+}

@@ -77,7 +77,8 @@ typedef struct appContext {
     float textW, textH; // Width and height of the static text
 
     //Control booleans
-    bool winning, keyboardCard, titleCard, loseCard, showWireframe, paused, firstRun;
+    bool winning, keyboardCard, titleCard, loseCard;
+    bool showWireframe, paused, userPause, firstRun;
 
     //Double press control counters
     Uint8 amountPressed, amountPressedDown;

@@ -43,6 +43,7 @@ SDL_FRect keyboardTextRect;
 SDL_FRect pausedBackground;
 
 colours colour[7];
+lineClearAnim clearInst;
 
 // -- SDL interface functions --
 
@@ -57,6 +58,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.firstRun = true;
     app.heldtet = -1;
     app.amountPressed = -1;
+    clearLinesArray(&clearInst);
 
     SDL_FRect temp4 = {0, 0, app.width, app.height};
     pausedBackground = temp4;
@@ -449,9 +451,17 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     }
                     if (countBlocks == 10) {
                         moveBoardDown(&app, l);
+                        pushBackToLinesArray(&clearInst, l);
                         linesCleared++;
                     }
                 }
+
+                for (int check = 1; check < 5; check++) {
+                    printf("%d, ", clearInst.rows[check]);
+                }
+                printf("\n");
+
+                clearLinesArray(&clearInst);
 
                 runWireframes(&app, app.currentTet);
 
@@ -527,7 +537,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             } 
         }
 
-        if (app.paused) {
+        if (app.paused && app.userPause) {
             SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);
