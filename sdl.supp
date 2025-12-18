@@ -1,0 +1,17 @@
+UNADDRESSABLE ACCESS
+name=SDL internals
+obj=SDL3.dll
+obj=SDL3_image.dll
+obj=SDL3_ttf.dll
+
+LEAK
+name=SDL allocations
+obj=SDL3.dll
+obj=SDL3_image.dll
+obj=SDL3_ttf.dll
+
+UNINITIALIZED READ
+name=SDL internal read
+obj=SDL3.dll
+obj=SDL3_image.dll
+obj=SDL3_ttf.dll
