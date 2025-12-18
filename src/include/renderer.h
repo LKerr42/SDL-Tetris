@@ -66,4 +66,6 @@ void displayNextBlocks(struct appContext *app);
  */
 void displayStaticText(struct appContext *app);
 
+void displayLineClearColumns(struct appContext *app);
+
 #endif

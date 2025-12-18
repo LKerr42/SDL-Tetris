@@ -3,6 +3,7 @@
 #include "include/app.h"
 #include "include/tetromino.h"
 #include "include/renderer.h"
+#include <stdio.h>
 
 void resetBoard(appContext *app) {
     for (int i = 0; i < 22; i++) {
@@ -199,6 +200,7 @@ void rotateTetrominoCW(appContext *app, tetromino *t) {
 
 void moveBoardDown(appContext *app, int remove) { //TODO: add sweeping animation to this
     //start at the index and set each to the one above
+    //TODO: update this to work with the new struct (all lines at once) and move to the end of the update function
     for (int i = remove; i >= 2; i--) {
         for (int j = 1; j <= 10; j++) {
             app->filledBlocks[i][j] = app->filledBlocks[i-1][j];
@@ -206,19 +208,47 @@ void moveBoardDown(appContext *app, int remove) { //TODO: add sweeping animation
     }
 }
 
-void clearLinesArray(lineClearAnim *clearData) {
-    clearData->rows[0] = 67;
+void clearLinesStruct(appContext *app) {
+    app->clearInst.rows[0] = 67;
+    app->clearInst.amountLines = 0;
+    app->clearInst.active = false;
     for (int i = 1; i < 5; i++) {
-        clearData->rows[i] = -1;
+        app->clearInst.rows[i] = -1;
     }
+
 }
 
-bool pushBackToLinesArray(lineClearAnim *clearData, int value) {
+bool pushBackToLinesArray(appContext *app, int value) {
     for (int i = 5; i >= 1; i--) {
-        if (clearData->rows[i-1] != -1) {
-            clearData->rows[i] = value;
+        if (app->clearInst.rows[i-1] != -1) {
+            app->clearInst.rows[i] = value;
             return true;
         } 
     }
     return false;
+}
+
+void startLineClear(appContext *app) {
+    printf("Starting line clear\n");
+    app->clearInst.active = true;
+    app->clearInst.lastStep = SDL_GetTicks();
+    app->clearInst.column = 1;
+    app->paused = true;
+}
+
+void updateLineClear(appContext *app, uint64_t now) {
+    if (!app->clearInst.active) return;
+    printf("Running line clear\n");
+
+    if (now - app->clearInst.lastStep >= 100) {
+        displayLineClearColumns(app);
+
+        app->clearInst.column++;
+        app->clearInst.lastStep = now;
+
+        if (app->clearInst.column == 11) {
+            app->paused = false;
+            clearLinesStruct(app);
+        }
+    }
 }

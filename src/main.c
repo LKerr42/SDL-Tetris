@@ -43,7 +43,6 @@ SDL_FRect keyboardTextRect;
 SDL_FRect pausedBackground;
 
 colours colour[7];
-lineClearAnim clearInst;
 
 // -- SDL interface functions --
 
@@ -58,7 +57,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.firstRun = true;
     app.heldtet = -1;
     app.amountPressed = -1;
-    clearLinesArray(&clearInst);
+    clearLinesStruct(&app);
 
     SDL_FRect temp4 = {0, 0, app.width, app.height};
     pausedBackground = temp4;
@@ -304,6 +303,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     }
     playWAV(&mainTheme, true);
 
+    updateLineClear(&app, now);
+
     if (app.titleCard) {
         //change through colours
         if (now - lastChange >= 500) {
@@ -450,23 +451,21 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         }
                     }
                     if (countBlocks == 10) {
-                        moveBoardDown(&app, l);
-                        pushBackToLinesArray(&clearInst, l);
+                        //moveBoardDown(&app, l);
+                        pushBackToLinesArray(&app, l);
                         linesCleared++;
                     }
                 }
 
                 for (int check = 1; check < 5; check++) {
-                    printf("%d, ", clearInst.rows[check]);
+                    printf("%d, ", app.clearInst.rows[check]);
                 }
                 printf("\n");
 
-                clearLinesArray(&clearInst);
-
-                runWireframes(&app, app.currentTet);
-
                 //update score
                 if (linesCleared > 0) {
+                    startLineClear(&app);
+
                     startSound(&sfx[CLEAR]);
                     switch (linesCleared) {
                         case 1:
@@ -489,8 +488,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         prependChar(incompleteScore, '0');
                     }
                     strcpy(app.scoreString, incompleteScore);
+
+                    app.clearInst.amountLines = linesCleared;
                 }
 
+                runWireframes(&app, app.currentTet);
                 buildBoardTexture(&app);
             }
 

@@ -63,6 +63,18 @@ typedef struct setBlocks {
 } setBlocks;
 
 /**
+ * lineClearAnim:
+ * Data for animating line clears. Located in app.h because I'm not bothered for foward declaration
+ */
+typedef struct {
+    bool active;
+    int amountLines;
+    int rows[5];
+    int column;
+    uint64_t lastStep;
+} lineClearAnim;
+
+/**
  * appContext:
  * Represents the main context for the entire app, only one instance.
  * Contains all related to rendering, the window, sizes, textures, tetrominoes, and fonts
@@ -86,6 +98,9 @@ typedef struct appContext {
     //Score controls
     char scoreString[7];
     int score;
+
+    //data for clear lines animation
+    lineClearAnim clearInst;
 
     //array of all the text textures in the control menu and its main texture
     textTexture textArray[300];

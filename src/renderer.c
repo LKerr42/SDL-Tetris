@@ -1,6 +1,7 @@
-#include "renderer.h"
-#include "tetromino.h"
-#include "app.h"
+#include "include/renderer.h"
+#include "include/tetromino.h"
+#include "include/app.h"
+#include <stdio.h>
 
 void displayBlock(struct appContext *app, SDL_FRect rect, int r, int g, int b) {
     int i, j, cX = 0, cY = 0;
@@ -193,4 +194,23 @@ void displayStaticText(appContext *app) {
     // Get text dimensions
     SDL_FRect textRect = {0, 0, app->textW, app->textH};
     SDL_RenderTexture(app->renderer, app->staticText, NULL, &textRect);
+}
+
+void displayLineClearColumns(appContext *app) {
+    printf("Displaying column %d\n", app->clearInst.column);
+    /*SDL_FRect columnRect = {
+        app->bWidthMin + (TETROMINO_BLOCK_SIZE * app->clearInst.column),
+        app->bHeightMin + (TETROMINO_BLOCK_SIZE * app->clearInst.rows[0]),
+        TETROMINO_BLOCK_SIZE,
+        (TETROMINO_BLOCK_SIZE * app->clearInst.amountLines)
+    };*/
+    SDL_FRect columnRect = {
+        TETROMINO_BLOCK_SIZE * app->clearInst.column,
+        0,
+        TETROMINO_BLOCK_SIZE, 
+        TETROMINO_BLOCK_SIZE
+    };
+    SDL_SetRenderDrawColor(app->renderer, 255, 255, 255, 255);
+
+    SDL_RenderFillRect(app->renderer, &columnRect);
 }

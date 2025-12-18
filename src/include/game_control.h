@@ -7,13 +7,6 @@
 typedef struct appContext appContext;
 typedef struct tetromino tetromino;
 
-typedef struct {
-    bool active;
-    int rows[5];
-    int column;
-    uint64_t lastStep;
-} lineClearAnim;
-
 /**
  * Reset the board array. Empties and content and resets the borders
  * 
@@ -70,8 +63,9 @@ void rotateTetrominoCCW(appContext *app, tetromino *t);
  */
 void moveBoardDown(appContext *app, int remove);
 
-void clearLinesArray(lineClearAnim *clearData);
-
-bool pushBackToLinesArray(lineClearAnim *clearData, int value);
+void clearLinesStruct(appContext *app);
+bool pushBackToLinesArray(appContext *app, int value);
+void startLineClear(appContext *app);
+void updateLineClear(appContext *app, uint64_t now);
 
 #endif
