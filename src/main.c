@@ -23,7 +23,7 @@ int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
 float keyW, keyH;
 
 char *finalScore = NULL;
-char fileNames[9][16] = {
+char fileNames[9][16] = { //TODO: Add sounds: lose, main theme B
     "clear",
     "holyMoly",
     "land",

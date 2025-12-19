@@ -208,14 +208,17 @@ void moveLineDown(appContext *app, int remove) {
 }
 
 void moveBoardDown(appContext *app) {
-    for (int i = app->clearInst.rows[1]; i <= getHighestLine(app); i++) {
-        moveLineDown(app, i);
+    for (int i = 1; i < 5; i++) {
+        if (app->clearInst.rows[i] != -1) {
+            moveLineDown(app, app->clearInst.rows[i]);
+        }
     }
 }
 
 void clearLinesStruct(appContext *app) {
     app->clearInst.rows[0] = 67;
     app->clearInst.amountLines = 0;
+    app->clearInst.column = 1;
     app->clearInst.active = false;
     for (int i = 1; i < 5; i++) {
         app->clearInst.rows[i] = -1;
@@ -245,7 +248,6 @@ void startLineClear(appContext *app) {
     printf("Starting line clear\n");
     app->clearInst.active = true;
     app->clearInst.lastStep = SDL_GetTicks();
-    app->clearInst.column = 1;
     app->paused = true;
 }
 
