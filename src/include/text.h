@@ -2,7 +2,8 @@
 #define TEXT_H
 
 #include <SDL3_ttf/SDL_ttf.h>
-#include "app.h"
+
+typedef struct appContext appContext;
 
 /**
  * Displays a string to the board with the specified params
@@ -37,5 +38,12 @@ void writeToKeyboardText(appContext *app, char mainStr[], char subStr[], bool wr
  * \param *app Pointer to the main context
  */
 void setupStaticText(appContext *app);
+
+/**
+ * Update the text texture to display the score. Reads in the score string and redraws the texture. 
+ * 
+ * \param *app Pointer to the main context
+ */
+void updateScoreTexture(appContext *app);
 
 #endif

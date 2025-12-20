@@ -23,7 +23,7 @@ int halfTitleWidth, halfTitleHeight, posX = 0, posY = 0;
 float keyW, keyH;
 
 char *finalScore = NULL;
-char fileNames[9][16] = { //TODO: Add sounds: lose, main theme B
+char fileNames[9][16] = { //TODO: Add sounds: lose, main theme B, redo clear sound
     "clear",
     "holyMoly",
     "land",
@@ -52,6 +52,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.width = 1000;
     app.height = 750;
     app.score = 0;
+    sprintf(app.scoreString, "%s", "0000000");
     app.titleCard = true;
     app.showWireframe = true;
     app.firstRun = true;
@@ -213,6 +214,21 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_FRect temp2 = {keyX, keyY+intKeyH+5, intKeyW, 100};
     keyboardTextRect = temp2;
 
+    app.scoreTexture.tex = SDL_CreateTexture(
+        app.renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        intKeyW, 100
+    );
+    if (!app.scoreTexture.tex) {
+        printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
+    }
+
+    app.scoreTexture.dest.x = (app.bWidthMax+20);
+    app.scoreTexture.dest.y = (app.bHeightMin+49);
+
+    updateScoreTexture(&app);
+
     // -- next blocks -- 
     for (int k = 0; k < 4; k++) {
         app.nextBlocks[k] = SDL_rand(7);
@@ -256,7 +272,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             if (app.keyboardCard) {
                 handleInputKeyboardCard(&app, event->key.scancode, false);
             } 
-            if (event->key.scancode == SDL_SCANCODE_DOWN && app.winning) {
+            if (event->key.scancode == SDL_SCANCODE_DOWN && app.winning && !(app.paused || app.userPause)) {
                 app.amountPressedDown++;
             }
         }
@@ -274,12 +290,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
             keyboardTextRect.x = keyRect.x;
             keyboardTextRect.y = keyRect.y + keyRect.h + 10;
+            
+            app.scoreTexture.dest.x = (app.bWidthMax+20);
+            app.scoreTexture.dest.y = (app.bHeightMin+49);
 
             halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
             halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
 
-            SDL_FRect temp2 = {0, 0, app.width, app.height};
-            pausedBackground = temp2;
+            pausedBackground.w = app.width;
+            pausedBackground.h = app.height;
 
             break;
         }
@@ -345,6 +364,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
     } else if (app.keyboardCard) {
+        displayText(&app, "-- Controls menu --", -1, 10, app.globalFont, 255, 255, 255);
+
         SDL_RenderTexture(app.renderer, app.keyboardText, NULL, &keyboardTextRect);
         SDL_RenderTexture(app.renderer, app.backgroundKeyboard, NULL, &keyRect);
         SDL_RenderTexture(app.renderer, app.keyboard, NULL, &keyRect);
@@ -375,7 +396,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             sprintf(app.scoreString, "%s", "0000000");
 
         }
-        displayText(&app, app.scoreString, (app.bWidthMax+20), (app.bHeightMin+49), app.globalFont, 255, 255, 255);
+        SDL_RenderTexture(app.renderer, app.scoreTexture.tex, NULL, &app.scoreTexture.dest);
         int countBlocks = 0, linesCleared = 0;
         char incompleteScore[7];
 
@@ -400,9 +421,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
         if (now - lastFallTime >= 1000) {
             //check if any are above a set block
-            if (canMove(&app, app.currentTet, 0, 1) && !app.paused) {
+            if (canMove(&app, app.currentTet, 0, 1) && !(app.paused || app.userPause)) {
                 app.currentTet->y += 1;
-            } else if (!app.paused) {
+            } else if (!(app.paused || app.userPause)) {
                 startSound(&sfx[LAND]);
         
                 //set block
@@ -481,12 +502,13 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             break;
                     }
 
-                    //update string
+                    //update string and texture
                     sprintf(incompleteScore, "%d", app.score);
                     while (strlen(incompleteScore) != 7) {
                         prependChar(incompleteScore, '0');
                     }
                     strcpy(app.scoreString, incompleteScore);
+                    updateScoreTexture(&app);
 
                     app.clearInst.amountLines = linesCleared;
                 }
@@ -538,7 +560,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             } 
         }
 
-        if (app.paused && app.userPause) {
+        if (app.userPause) {
             SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);

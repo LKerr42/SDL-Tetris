@@ -114,6 +114,7 @@ typedef struct appContext {
     //baord and ui textures
     SDL_Texture *boardTexture;
     SDL_Texture *nextTexture;
+    textTexture scoreTexture;
 
     //Three sizes of the global font
     TTF_Font* globalFont;

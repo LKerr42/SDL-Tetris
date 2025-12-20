@@ -1,5 +1,6 @@
 #include "include/text.h"
 #include "include/app.h"
+#include <string.h>
 
 void displayText(appContext *app, char str[], int x, int y, TTF_Font* font, int r, int g, int b) {
     // Render text to a surface
@@ -150,4 +151,32 @@ void setupStaticText(appContext *app) {
     SDL_DestroySurface(surface3);
     SDL_DestroySurface(surface4);
     SDL_DestroySurface(combined);
+}
+
+void updateScoreTexture(appContext *app) {
+    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Surface* textSurface = TTF_RenderText_Blended(app->globalFont, app->scoreString, strlen(app->scoreString), textColor);
+    if (!textSurface) {
+        SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
+    }
+
+    // Convert surface to texture
+    SDL_DestroyTexture(app->scoreTexture.tex);
+    app->scoreTexture.tex = SDL_CreateTextureFromSurface(app->renderer, textSurface);
+    SDL_DestroySurface(textSurface); // free surface memory
+    if (!app->scoreTexture.tex) {
+        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+        return;
+    }
+
+    // Get text dimensions
+    float textW, textH;
+    SDL_GetTextureSize(app->scoreTexture.tex, &textW, &textH);
+    SDL_FRect temp = {
+        app->scoreTexture.dest.x,
+        app->scoreTexture.dest.y,
+        textW,
+        textH
+    };
+    app->scoreTexture.dest = temp;
 }

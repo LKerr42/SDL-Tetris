@@ -3,6 +3,7 @@
 #include "include/app.h"
 #include "include/tetromino.h"
 #include "include/renderer.h"
+#include "include/text.h"
 #include <stdio.h>
 
 void resetBoard(appContext *app) {
@@ -31,6 +32,7 @@ void resetGame(appContext *app) {
         }
     }
     app->score = 0;
+    sprintf(app->scoreString, "%s", "0000000");
     app->heldtet = -1;
     app->currentBlock = 0;
     app->currentTet->x = 4;
@@ -38,6 +40,7 @@ void resetGame(appContext *app) {
     app->winning = true;
     app->loseCard = false;
     app->firstRun = true;
+    updateScoreTexture(app);
 }
 
 void runWireframes(appContext *app, tetromino *copyTet) {
@@ -252,7 +255,7 @@ void startLineClear(appContext *app) {
 }
 
 void updateLineClear(appContext *app, uint64_t now) {
-    if (!app->clearInst.active) return;
+    if (!app->clearInst.active || app->userPause) return;
     printf("Running line clear\n");
 
     if (now - app->clearInst.lastStep >= 100) {
