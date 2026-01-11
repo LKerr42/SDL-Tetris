@@ -5,6 +5,8 @@
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 
+#define addOrTake(num) ((num) > (0) ? (-1) : (1))
+
 struct appContext;
 
 /**
@@ -66,6 +68,32 @@ void displayNextBlocks(struct appContext *app);
  */
 void displayStaticText(struct appContext *app);
 
+/**
+ * Render the rectangles to clear a line.
+ * 
+ * \param *app Pointer to the app context.
+ */
 void displayLineClearColumns(struct appContext *app);
+
+/**
+ * Initalise the snowflakes for the christmas theme
+ * 
+ * \param *app Pointer to the app context.
+ */
+void initSnow(struct appContext *app);
+
+/**
+ * Run the snowflakes animations for the christmas theme
+ * 
+ * \param *app Pointer to the app context.
+ */
+void updateSnow(struct appContext *app);
+
+/**
+ * Render the snowflakes for the christmas theme
+ * 
+ * \param *app Pointer to the app context.
+ */
+void renderSnow(struct appContext *app);
 
 #endif

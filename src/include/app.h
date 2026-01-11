@@ -16,6 +16,11 @@ typedef struct tetromino tetromino;
  */
 #define KEYBOARD_PIXEL_SIZE  10
 
+/**
+ * Maximum snow to display while snowing
+ */
+#define MAX_SNOW 400
+
 #define CLEAR     0 
 #define HOLYMOLY  1
 #define LAND      2
@@ -76,6 +81,18 @@ typedef struct {
 
 /**
  * appContext:
+ * Represents a snowflake falling for the christmas theme. 
+ */
+typedef struct snowflake {
+    int x;
+    int y;
+    int speed;
+    int drift;
+    int size;
+} snowflake;
+
+/**
+ * appContext:
  * Represents the main context for the entire app, only one instance.
  * Contains all related to rendering, the window, sizes, textures, tetrominoes, and fonts
  */
@@ -87,10 +104,15 @@ typedef struct appContext {
     int width, height; //Width and height of the window in pixels
     int bWidthMin, bWidthMax, bHeightMin, bHeightMax; //bounding box of the board in pixels
     float textW, textH; // Width and height of the static text
+    SDL_FRect displayRect; //display rectangle for the board
 
     //Control booleans
     bool winning, keyboardCard, titleCard, loseCard;
     bool showWireframe, paused, userPause, firstRun;
+
+    //Christmas controls
+    bool Xmas;
+    snowflake snow[MAX_SNOW];
 
     //Double press control counters
     Uint8 amountPressed, amountPressedDown;
@@ -98,6 +120,7 @@ typedef struct appContext {
     //Score controls
     char scoreString[7];
     int score;
+    int scoreTenth;
 
     //data for clear lines animation
     lineClearAnim clearInst;
@@ -147,7 +170,7 @@ void prependChar(char *str, char c);
  * Close the app and window.
  * Frees all memory and pointers used by the app.
  * 
- * \param *str Pointer to the app context
+ * \param *app Pointer to the app context
  */
 void closeApp(appContext *app);
 

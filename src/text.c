@@ -1,6 +1,7 @@
 #include "include/text.h"
 #include "include/app.h"
 #include <string.h>
+#include <stdio.h>
 
 void displayText(appContext *app, char str[], int x, int y, TTF_Font* font, int r, int g, int b) {
     // Render text to a surface
@@ -154,6 +155,14 @@ void setupStaticText(appContext *app) {
 }
 
 void updateScoreTexture(appContext *app) {
+    char incompleteScore[7];
+    //update string
+    sprintf(incompleteScore, "%d", app->score);
+    while (strlen(incompleteScore) != 7) {
+        prependChar(incompleteScore, '0');
+    }
+    strcpy(app->scoreString, incompleteScore);
+
     SDL_Color textColor = {255, 255, 255, 255};
     SDL_Surface* textSurface = TTF_RenderText_Blended(app->globalFont, app->scoreString, strlen(app->scoreString), textColor);
     if (!textSurface) {

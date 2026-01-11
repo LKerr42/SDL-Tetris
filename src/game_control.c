@@ -239,16 +239,7 @@ bool pushBackToLinesArray(appContext *app, int value) {
     return false;
 }
 
-int getHighestLine(appContext *app) {
-    int maximum = 0;
-    for (int i = 1; i < 5; i++) {
-        maximum = max(app->clearInst.rows[i], maximum);
-    }
-    return maximum;
-}
-
 void startLineClear(appContext *app) {
-    printf("Starting line clear\n");
     app->clearInst.active = true;
     app->clearInst.lastStep = SDL_GetTicks();
     app->paused = true;
@@ -256,13 +247,17 @@ void startLineClear(appContext *app) {
 
 void updateLineClear(appContext *app, uint64_t now) {
     if (!app->clearInst.active || app->userPause) return;
-    printf("Running line clear\n");
 
-    if (now - app->clearInst.lastStep >= 100) {
+    if (now - app->clearInst.lastStep >= 90) {
         displayLineClearColumns(app);
 
         app->clearInst.column++;
         app->clearInst.lastStep = now;
+
+        if (app->clearInst.column < 12) {
+            app->score += app->scoreTenth;
+            updateScoreTexture(app);
+        }
 
         if (app->clearInst.column == 12) {
             app->paused = false;

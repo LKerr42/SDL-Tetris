@@ -63,11 +63,34 @@ void rotateTetrominoCCW(appContext *app, tetromino *t);
  */
 void moveLineDown(appContext *app, int remove);
 
+/**
+ * Reset the data of the main clear lines struct.
+ * 
+ * \param *app   Pointer to the app context
+ */
 void clearLinesStruct(appContext *app);
-bool pushBackToLinesArray(appContext *app, int value);
-void startLineClear(appContext *app);
-void updateLineClear(appContext *app, uint64_t now);
-int getHighestLine(appContext *app);
 
+/**
+ * Push back a row index value to the lines array
+ * 
+ * \param *app   Pointer to the app context
+ * \param value  Row indexed by array index to push back
+ */
+bool pushBackToLinesArray(appContext *app, int value);
+
+/**
+ * Start the animation for the line clearing. Sets the active bool to true and pauses the game
+ * 
+ * \param *app   Pointer to the app context
+ */
+void startLineClear(appContext *app);
+
+/**
+ * Start the animation for the line clearing. Sets the active bool to true and pauses the game
+ * 
+ * \param *app   Pointer to the app context
+ * \param now    Ticks since launch in unsigned int 64 bits
+ */
+void updateLineClear(appContext *app, uint64_t now);
 
 #endif

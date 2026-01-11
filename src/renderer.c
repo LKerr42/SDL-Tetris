@@ -130,16 +130,8 @@ void buildBoardTexture(appContext *app) {
     SDL_SetRenderTarget(app->renderer, NULL);
 }
 
-//TODO: improve efficency by moving rect def to widow resize
 void renderBoard(appContext *app) {
-    SDL_FRect displayRect = {
-        app->bWidthMin,
-        app->bHeightMin,
-        12*TETROMINO_BLOCK_SIZE,
-        22*TETROMINO_BLOCK_SIZE
-    };
-
-    SDL_RenderTexture(app->renderer, app->boardTexture, NULL, &displayRect);
+    SDL_RenderTexture(app->renderer, app->boardTexture, NULL, &app->displayRect);
 }
 
 void displayNextBlocks(appContext *app) {
@@ -197,12 +189,6 @@ void displayStaticText(appContext *app) {
 }
 
 void displayLineClearColumns(appContext *app) {
-    if (app->clearInst.rows[1] != -1) {
-        printf("Displaying column %d\n", app->clearInst.column);
-    } else {
-        printf("-- ERROR -- Error displaying column at %d\n", app->clearInst.column);
-    }
-
     SDL_SetRenderTarget(app->renderer, app->boardTexture);
     SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
 
@@ -219,4 +205,43 @@ void displayLineClearColumns(appContext *app) {
     }
 
     SDL_SetRenderTarget(app->renderer, NULL);
+}
+
+void initSnow(appContext *app) {
+    if (!app->Xmas) return;
+    for (int i = 0; i < MAX_SNOW; i++) {
+        app->snow[i].x = (int)SDL_rand(app->width);
+        app->snow[i].y = (int)SDL_rand(app->height / 2);
+        app->snow[i].speed = (int)SDL_rand(15) + 1;
+        app->snow[i].drift = (int)SDL_rand(3);
+        app->snow[i].size = (int)SDL_rand(3) + 3;
+    }
+}
+
+void updateSnow(appContext *app) {
+    if (!app->Xmas) return; 
+    for (int i = 0; i < MAX_SNOW; i++) {
+        app->snow[i].y += app->snow[i].speed;
+        app->snow[i].x += addOrTake((int)SDL_rand(2)) + app->snow[i].drift;
+
+        if (app->snow[i].y > app->height) {
+            app->snow[i].y = 0;
+            app->snow[i].x = (int)SDL_rand(app->width);
+        }
+    }
+}
+
+void renderSnow(appContext *app) {
+    if (!app->Xmas) return;
+    SDL_SetRenderDrawColor(app->renderer, 255, 255, 255, 255);
+
+    for (int i = 0; i < MAX_SNOW; i++) {
+        SDL_FRect s = {
+            app->snow[i].x, 
+            app->snow[i].y,
+            app->snow[i].size,
+            app->snow[i].size
+        };
+        SDL_RenderFillRect(app->renderer, &s);
+    }
 }

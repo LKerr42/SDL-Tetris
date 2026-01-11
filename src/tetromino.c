@@ -21,6 +21,37 @@ void setColourDef(colours *data, int R, int G, int B) {
     data -> b = B;
 }
 
+void resetTetColours(appContext *app) {
+    int XmasColours[2][3] = {
+        {255, 0, 0},
+        {0, 255, 0}
+    };
+    int random = SDL_rand(2);
+    if (!app->Xmas) {
+        setTetColour(app->tetArray[0], 0, 255, 255); //Long boy
+        setTetColour(app->tetArray[1], 0, 0, 255);   //Left L
+        setTetColour(app->tetArray[2], 255, 160, 0); //Right L
+        setTetColour(app->tetArray[3], 255, 255, 0); //Square 
+        setTetColour(app->tetArray[4], 0, 255, 0);   //Right squiggle
+        setTetColour(app->tetArray[5], 150, 0, 255); //T boy
+        setTetColour(app->tetArray[6], 255, 0, 0);   //Left squiggle
+    } else {
+        setTetColour(app->tetArray[0], XmasColours[random][0], XmasColours[random][1], XmasColours[random][2]); //Long boy
+        random = SDL_rand(2);
+        setTetColour(app->tetArray[1], XmasColours[random][0], XmasColours[random][1], XmasColours[random][2]);   //Left L
+        random = SDL_rand(2);
+        setTetColour(app->tetArray[2], XmasColours[random][0], XmasColours[random][1], XmasColours[random][2]); //Right L
+        random = SDL_rand(2);
+        setTetColour(app->tetArray[3], XmasColours[random][0], XmasColours[random][1], XmasColours[random][2]); //Square 
+        random = SDL_rand(2);
+        setTetColour(app->tetArray[4], XmasColours[random][0], XmasColours[random][1], XmasColours[random][2]);   //Right squiggle
+        random = SDL_rand(2);
+        setTetColour(app->tetArray[5], XmasColours[random][0], XmasColours[random][1], XmasColours[random][2]); //T boy
+        random = SDL_rand(2);
+        setTetColour(app->tetArray[6], XmasColours[random][0], XmasColours[random][1], XmasColours[random][2]);   //Left squiggle
+    }
+}
+
 void setupTetrominos(appContext *app) {
     int shapes[7][4][4] = {
         //Long boy
@@ -64,13 +95,7 @@ void setupTetrominos(appContext *app) {
         app->tetArray[a] = calloc(1, sizeof(tetromino));
     }
 
-    setTetColour(app->tetArray[0], 0, 255, 255); //Long boy
-    setTetColour(app->tetArray[1], 0, 0, 255);   //Left L
-    setTetColour(app->tetArray[2], 255, 160, 0); //Right L
-    setTetColour(app->tetArray[3], 255, 255, 0); //Square 
-    setTetColour(app->tetArray[4], 0, 255, 0);   //Right squiggle
-    setTetColour(app->tetArray[5], 150, 0, 255); //T boy
-    setTetColour(app->tetArray[6], 255, 0, 0);   //Left squiggle
+    resetTetColours(app);
 
     app->currentTet = calloc(1, sizeof(tetromino));
     app->wireframeTet = calloc(1, sizeof(tetromino));

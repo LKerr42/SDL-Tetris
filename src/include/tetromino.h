@@ -89,4 +89,11 @@ void setupTetrominos(struct appContext *app);
  */
 void setupTitleBlocks(struct appContext *app);
 
+/**
+ * Reset the colour data for the tetrominoes. Resets them for holiday specials and back
+ * 
+ * \param *app  Pointer to the main context
+ */
+void resetTetColours(struct appContext *app);
+
 #endif

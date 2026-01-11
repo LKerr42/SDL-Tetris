@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "include/app.h"
 #include "include/audio.h"
@@ -56,6 +57,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.titleCard = true;
     app.showWireframe = true;
     app.firstRun = true;
+    app.Xmas = false;
     app.heldtet = -1;
     app.amountPressed = -1;
     clearLinesStruct(&app);
@@ -63,15 +65,32 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_FRect temp4 = {0, 0, app.width, app.height};
     pausedBackground = temp4;
 
+    // -- time setup --
+    time_t rawfear;
+    struct tm *info;
+
+    time(&rawfear);
+    info = localtime(&rawfear);
+
+    if (info->tm_mon == 11 && info->tm_mday == 25) {
+        app.Xmas = true;
+        initSnow(&app);
+    }
+
     // -- width and heights --
     app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
     app.bWidthMax = (app.width >> 1) + (6*TETROMINO_BLOCK_SIZE); // + 5
 
     app.bHeightMin = (app.height >> 1) - (11*TETROMINO_BLOCK_SIZE); // - 10
-    app.bHeightMax = (app.height >> 1) + (11*TETROMINO_BLOCK_SIZE);; // + 10
+    app.bHeightMax = (app.height >> 1) + (11*TETROMINO_BLOCK_SIZE); // + 10
 
     halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
     halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
+
+    app.displayRect.x = app.bWidthMin;
+    app.displayRect.y = app.bHeightMin;
+    app.displayRect.w = 12*TETROMINO_BLOCK_SIZE;
+    app.displayRect.h = 22*TETROMINO_BLOCK_SIZE;
 
     // -- setup tetrominoes --
     setupTetrominos(&app);
@@ -278,25 +297,38 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         }
         case SDL_EVENT_WINDOW_RESIZED: {
             SDL_GetWindowSize(app.window, &app.width, &app.height);
+            //width
             app.bWidthMin = (app.width >> 1) - (6*TETROMINO_BLOCK_SIZE); // - 5
             app.bWidthMax = (app.width >> 1) + (6*TETROMINO_BLOCK_SIZE); // + 5
 
+            //height
             app.bHeightMin = (app.height >> 1) - (11*TETROMINO_BLOCK_SIZE); // - 10
             app.bHeightMax = (app.height >> 1) + (11*TETROMINO_BLOCK_SIZE);; // + 10
+
+            //display rectangle
+            app.displayRect.x = app.bWidthMin;
+            app.displayRect.y = app.bHeightMin;
+
+            //static text
             setupStaticText(&app);
 
+            //keyboard rectangle
             keyRect.x = (app.width >> 1) - ((int)keyW/2);
             keyRect.y = (app.height >> 1) - ((int)keyH/2) - 5;
 
+            //keyboard text rectang;e
             keyboardTextRect.x = keyRect.x;
             keyboardTextRect.y = keyRect.y + keyRect.h + 10;
             
+            //score texture dest
             app.scoreTexture.dest.x = (app.bWidthMax+20);
             app.scoreTexture.dest.y = (app.bHeightMin+49);
 
+            //dest for title
             halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
             halfTitleHeight = ((app.height >> 1) - (5 * TETROMINO_BLOCK_SIZE >> 1));
 
+            //paused backgroud rectangle
             pausedBackground.w = app.width;
             pausedBackground.h = app.height;
 
@@ -310,7 +342,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 now = SDL_GetTicks();
-    static Uint64 lastFallTime = 0, lastChange = 0, lastPress = 0, lastPressDown = 0;
+    static Uint64 lastFallTime = 0, lastSnowFall = 0, lastChange = 0, lastPress = 0, lastPressDown = 0;
 
     SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 255);
     SDL_RenderClear(app.renderer);
@@ -323,7 +355,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     playWAV(&mainTheme, true);
 
     updateLineClear(&app, now);
-
+    
     if (app.titleCard) {
         //change through colours
         if (now - lastChange >= 500) {
@@ -390,15 +422,13 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             updateNextBlocks(&app); 
             app.firstRun = false;
             *app.currentTet = *app.tetArray[app.currentBlock];
-            runWireframes(&app, app.currentTet);
             SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
-
             sprintf(app.scoreString, "%s", "0000000");
 
+            runWireframes(&app, app.currentTet);
         }
         SDL_RenderTexture(app.renderer, app.scoreTexture.tex, NULL, &app.scoreTexture.dest);
         int countBlocks = 0, linesCleared = 0;
-        char incompleteScore[7];
 
         if (app.amountPressedDown == 1) {
             lastPressDown++;
@@ -412,6 +442,11 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
             app.amountPressedDown = 0;
             lastPressDown = 0;
+        }
+
+        if (now - lastSnowFall >= 80) {
+            updateSnow(&app);
+            lastSnowFall = now;
         }
 
         if (lastPressDown >= 500) {
@@ -434,9 +469,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             posY = app.currentTet->y+app.currentTet->blocks[k][l].y;
 
                             app.filledBlocks[posY][posX].v = true; 
-                            app.filledBlocks[posY][posX].r = app.currentTet->blocks[k][l].r; 
-                            app.filledBlocks[posY][posX].g = app.currentTet->blocks[k][l].g;
-                            app.filledBlocks[posY][posX].b = app.currentTet->blocks[k][l].b;
+                            app.filledBlocks[posY][posX].r = app.currentTet->r; 
+                            app.filledBlocks[posY][posX].g = app.currentTet->g;
+                            app.filledBlocks[posY][posX].b = app.currentTet->b;
                         }
                     }
                 }
@@ -477,11 +512,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     }
                 }
 
-                for (int check = 1; check < 5; check++) {
-                    printf("%d, ", app.clearInst.rows[check]);
-                }
-                printf("\n");
-
                 //update score
                 if (linesCleared > 0) {
                     startLineClear(&app);
@@ -489,26 +519,22 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     startSound(&sfx[CLEAR]);
                     switch (linesCleared) {
                         case 1:
-                            app.score += 40;
+                            //40
+                            app.scoreTenth = 4;
                             break;
                         case 2:
-                            app.score += 100;
+                            //100
+                            app.scoreTenth = 10;
                             break;
                         case 3:
-                            app.score += 300;
+                            //300
+                            app.scoreTenth = 30;
                             break;
                         case 4:
-                            app.score += 1200;
+                            //1200
+                            app.scoreTenth = 120;
                             break;
                     }
-
-                    //update string and texture
-                    sprintf(incompleteScore, "%d", app.score);
-                    while (strlen(incompleteScore) != 7) {
-                        prependChar(incompleteScore, '0');
-                    }
-                    strcpy(app.scoreString, incompleteScore);
-                    updateScoreTexture(&app);
 
                     app.clearInst.amountLines = linesCleared;
                 }
@@ -554,7 +580,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             TETROMINO_BLOCK_SIZE,
                             TETROMINO_BLOCK_SIZE
                         };
-                        displayBlock(&app, Hrect, app.tetArray[app.heldtet]->r, app.tetArray[app.heldtet]->g, app.tetArray[app.heldtet]->b);
+
+                        displayBlock(&app, Hrect, app.tetArray[app.heldtet]->r, app.tetArray[app.heldtet]->g, app.tetArray[app.heldtet]->b);                          
                     }
                 }
             } 
@@ -565,6 +592,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);
         } 
+        renderSnow(&app);
     } else if (app.loseCard) {
         SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha
         SDL_RenderClear(app.renderer);

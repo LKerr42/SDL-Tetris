@@ -334,7 +334,7 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
             break;
         }
         case SDL_SCANCODE_DOWN: {
-            writeToKeyboardText(app, "-Down-", "Tap to move block down, double tap for auto place", pressing, SDL_SCANCODE_DOWN);
+            writeToKeyboardText(app, "-Down-", "Tap to move block down, double tap for hard drop", pressing, SDL_SCANCODE_DOWN);
             addKeyboardRects(app, 74, 30, 5, 3, pressing);
             break;
         }
@@ -519,6 +519,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
                 *app->currentTet = *app->tetArray[app->currentBlock];
                 app->currentTet->x = 4;
                 app->currentTet->y = 1;
+
                 updateNextBlocks(app);
                 runWireframes(app, app->currentTet);
                 break;
@@ -557,10 +558,11 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             quit_event.type = SDL_EVENT_QUIT;
             SDL_PushEvent(&quit_event);
         }
-        case SDL_SCANCODE_O: {
-            if (app->winning) {
-                app->paused = !app->paused;
-            }
+        case SDL_SCANCODE_C: {
+            app->Xmas = !app->Xmas;
+            initSnow(app);
+            resetTetColours(app);
+            updateNextBlocks(app);
         }
     }
 }
