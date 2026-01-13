@@ -46,4 +46,11 @@ void setupStaticText(appContext *app);
  */
 void updateScoreTexture(appContext *app);
 
+/**
+ * Update the text texture to display the level. Reads in the level integer and redraws the texture. 
+ * 
+ * \param *app Pointer to the main context
+ */
+void updateLevelTexture(appContext *app);
+
 #endif

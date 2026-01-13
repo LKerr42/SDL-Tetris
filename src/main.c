@@ -52,14 +52,19 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     // -- app setup --
     app.width = 1000;
     app.height = 750;
+
     app.score = 0;
     sprintf(app.scoreString, "%s", "0000000");
+
     app.titleCard = true;
     app.showWireframe = true;
     app.firstRun = true;
     app.Xmas = false;
+
     app.heldtet = -1;
     app.amountPressed = -1;
+
+    app.fallSpeed = 1000;
     clearLinesStruct(&app);
 
     SDL_FRect temp4 = {0, 0, app.width, app.height};
@@ -118,7 +123,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     // -- SDL init --
-    SDL_SetAppMetadata("Play Tetis!", "1.1.4", "com/LKerr42/SDL-Tetris.github");
+    SDL_SetAppMetadata("Play Tetis!", "1.2.2", "com/LKerr42/SDL-Tetris.github");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -247,6 +252,18 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.scoreTexture.dest.y = (app.bHeightMin+49);
 
     updateScoreTexture(&app);
+
+    app.levelTexture.tex = SDL_CreateTexture(
+        app.renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        intKeyW, 100
+    );
+
+    updateLevelTexture(&app);
+
+    app.levelTexture.dest.x = (app.width >> 1) - ((int)app.levelTexture.dest.w >> 1) + 15; 
+    app.levelTexture.dest.y = (app.bHeightMin >> 1) + ((int)app.levelTexture.dest.h >> 1);
 
     // -- next blocks -- 
     for (int k = 0; k < 4; k++) {
@@ -416,7 +433,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             lastPress = 0;
         }
     } else if (app.winning) { 
+        //Display the text
         displayStaticText(&app);
+        SDL_RenderTexture(app.renderer, app.scoreTexture.tex, NULL, &app.scoreTexture.dest);
+        SDL_RenderTexture(app.renderer, app.levelTexture.tex, NULL, &app.levelTexture.dest);
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed
         if (app.firstRun == true) {
             updateNextBlocks(&app); 
@@ -427,12 +447,15 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
             runWireframes(&app, app.currentTet);
         }
-        SDL_RenderTexture(app.renderer, app.scoreTexture.tex, NULL, &app.scoreTexture.dest);
-        int countBlocks = 0, linesCleared = 0;
 
+        //Set locals
+        int countBlocks = 0, linesCleared = 0, localScore = 0;
+
+        //Logic for hard drop input
         if (app.amountPressedDown == 1) {
             lastPressDown++;
         } else if (app.amountPressedDown == 2) {
+            //Move tet down until it cant
             while (true) { 
                 if (canMove(&app, app.currentTet, 0, 1)) {
                     app.currentTet->y += 1;
@@ -440,21 +463,25 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     break;
                 }
             }
+            //Reset variables
             app.amountPressedDown = 0;
             lastPressDown = 0;
         }
 
+        //Update snow for Xmas theme
         if (now - lastSnowFall >= 80) {
             updateSnow(&app);
             lastSnowFall = now;
         }
 
+        //Reset timer for double press down
         if (lastPressDown >= 500) {
             app.amountPressedDown = 0;
             lastPressDown = 0;
         }
 
-        if (now - lastFallTime >= 1000) {
+        //Main logic
+        if (now - lastFallTime >= app.fallSpeed) {
             //check if any are above a set block
             if (canMove(&app, app.currentTet, 0, 1) && !(app.paused || app.userPause)) {
                 app.currentTet->y += 1;
@@ -520,23 +547,30 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     switch (linesCleared) {
                         case 1:
                             //40
-                            app.scoreTenth = 4;
+                            localScore = 40 * (app.level + 1);
                             break;
                         case 2:
                             //100
-                            app.scoreTenth = 10;
+                            localScore = 100 * (app.level + 1);
                             break;
                         case 3:
                             //300
-                            app.scoreTenth = 30;
+                            localScore = 300 * (app.level + 1);
                             break;
                         case 4:
                             //1200
-                            app.scoreTenth = 120;
+                            localScore = 1200 * (app.level + 1);
                             break;
                     }
+                    if (localScore % 10 != 0) {
+                        printf("FAILSAFE: score to add is not a multiple of 10\n");
+                    }
+                    app.scoreTenth = localScore / 10;
 
                     app.clearInst.amountLines = linesCleared;
+
+                    app.totalLinesCleared += linesCleared;
+                    printf("TotalLinesCleared = %d\n", app.totalLinesCleared);
                 }
 
                 runWireframes(&app, app.currentTet);

@@ -33,14 +33,22 @@ void resetGame(appContext *app) {
     }
     app->score = 0;
     sprintf(app->scoreString, "%s", "0000000");
+    updateScoreTexture(app);
+
     app->heldtet = -1;
     app->currentBlock = 0;
+
     app->currentTet->x = 4;
     app->currentTet->y = 1;
+
     app->winning = true;
     app->loseCard = false;
     app->firstRun = true;
-    updateScoreTexture(app);
+        
+    app->fallSpeed = 1000;
+    app->totalLinesCleared = 0;
+    app->level = 0;
+    updateLevelTexture(app);
 }
 
 void runWireframes(appContext *app, tetromino *copyTet) {
@@ -260,6 +268,11 @@ void updateLineClear(appContext *app, uint64_t now) {
         }
 
         if (app->clearInst.column == 12) {
+            if (app->totalLinesCleared / 10 > app->level) { //New level
+                app->level++;
+                app->fallSpeed -= 50;
+                updateLevelTexture(app);
+            }
             app->paused = false;
             moveBoardDown(app);
             runWireframes(app, app->currentTet);

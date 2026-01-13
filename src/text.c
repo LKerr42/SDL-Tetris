@@ -115,8 +115,8 @@ void setupStaticText(appContext *app) {
     SDL_Surface* surface1 = TTF_RenderText_Blended(app->globalFont, "Tetris Time!", 12, textColor);
     SDL_Surface* surface2  = TTF_RenderText_Blended(app->globalFont, "-Held-", 6, textColor);
     SDL_Surface* surface3  = TTF_RenderText_Blended(app->globalFont, "-Score-", 7, textColor);
-    SDL_Surface* surface4  = TTF_RenderText_Blended(app->globalFont, "-Next Blocks-", 13, textColor);
-    if (!surface1 || !surface2 || !surface3) {
+    SDL_Surface* surface4  = TTF_RenderText_Blended(app->globalFont, "-Next-", 6, textColor);
+    if (!surface1 || !surface2 || !surface3 || !surface4) {
         SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
         return;
     }
@@ -126,7 +126,13 @@ void setupStaticText(appContext *app) {
     SDL_Surface *combined = SDL_CreateSurface(widMaxT+60+surface4->w, higMinT+(textHeight*3)+60, SDL_PIXELFORMAT_RGBA32);
 
     //setup destination rects
-    SDL_Rect dest1 = {(app->width >> 1) - (surface1->w >> 1) + 15, higMinT>>1, surface1->w, textHeight};
+    SDL_Rect dest1 = {
+        (app->width >> 1) - (surface1->w >> 1) + 15, 
+        (higMinT >> 1) - textHeight, 
+        surface1->w, 
+        textHeight
+    };
+
     SDL_Rect dest2 = {widMinT-180, higMinT+20, surface2->w, textHeight};
     SDL_Rect dest3 = {widMaxT+20, higMinT+20, surface3->w, textHeight};
     SDL_Rect dest4 = {widMaxT+20, higMinT+(textHeight << 1)+60, surface4->w, textHeight};
@@ -179,6 +185,7 @@ void updateScoreTexture(appContext *app) {
     }
 
     // Get text dimensions
+    //TODO: could be put behind a if null statement
     float textW, textH;
     SDL_GetTextureSize(app->scoreTexture.tex, &textW, &textH);
     SDL_FRect temp = {
@@ -188,4 +195,47 @@ void updateScoreTexture(appContext *app) {
         textH
     };
     app->scoreTexture.dest = temp;
+}
+
+void updateLevelTexture(appContext *app) {
+    char levelString[9];
+    if (app->level < 10) {
+        sprintf(levelString, "Level: 0%d", app->level);
+    } else {
+        sprintf(levelString, "Level: %d", app->level);
+    }
+    
+    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Surface* textSurface = TTF_RenderText_Blended(app->globalFont, levelString, strlen(levelString), textColor);
+    if (!textSurface) {
+        SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
+    }
+
+    // Convert surface to texture
+    SDL_DestroyTexture(app->levelTexture.tex);
+    app->levelTexture.tex = SDL_CreateTextureFromSurface(app->renderer, textSurface);
+    SDL_DestroySurface(textSurface); // free surface memory
+    if (!app->levelTexture.tex) {
+        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+        return;
+    }
+
+    float textW, textH;
+    SDL_GetTextureSize(app->levelTexture.tex, &textW, &textH);
+    SDL_FRect temp = {
+        app->levelTexture.dest.x,
+        app->levelTexture.dest.y,
+        textW,
+        textH
+    };
+    app->levelTexture.dest = temp;
+
+    /*
+    SDL_Rect dest5 = {
+        (app->width >> 1) - (surface5->w >> 1) + 15, 
+        (higMinT >> 1) + (textHeight >> 1), 
+        surface5->w, 
+        surface5->h
+    };
+    */
 }

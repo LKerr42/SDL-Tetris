@@ -122,6 +122,12 @@ typedef struct appContext {
     int score;
     int scoreTenth;
 
+    //Level controls
+    int level;
+    int fallSpeed;
+    int totalLinesCleared;
+    textTexture levelTexture;
+
     //data for clear lines animation
     lineClearAnim clearInst;
 
