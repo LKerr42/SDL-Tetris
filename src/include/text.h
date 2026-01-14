@@ -33,11 +33,25 @@ void displayText(appContext *app, char str[], int x, int y, TTF_Font* font, int 
 void writeToKeyboardText(appContext *app, char mainStr[], char subStr[], bool write, SDL_Scancode scancode);
 
 /**
- * Setup the staic text for the main game, rerun whenever the window changes size
+ * Setup the static text for the main game, rerun whenever the window changes size
  * 
  * \param *app Pointer to the main context
  */
-void setupStaticText(appContext *app);
+void setupMainStaticText(appContext *app);
+
+/**
+ * Setup the static text for the controls menu, rerun whenever the window changes size
+ * 
+ * \param *app Pointer to the main context
+ */
+void setupKeyboardStaticText(appContext *app);
+
+/**
+ * Setup the static text for the title card, rerun whenever the window changes size
+ * 
+ * \param *app Pointer to the main context
+ */
+void setupTitleStaticText(appContext *app);
 
 /**
  * Update the text texture to display the score. Reads in the score string and redraws the texture. 

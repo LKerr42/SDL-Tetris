@@ -188,7 +188,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         SDL_Log("Failed to load font app.globalFontL: %s", SDL_GetError());
     }
 
-    setupStaticText(&app);
+    // -- static texts --
+    setupMainStaticText(&app);
+    setupKeyboardStaticText(&app);
+    setupTitleStaticText(&app);
 
     // -- texture setup --
     app.boardTexture = SDL_CreateTexture(
@@ -262,7 +265,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     updateLevelTexture(&app);
 
-    app.levelTexture.dest.x = (app.width >> 1) - ((int)app.levelTexture.dest.w >> 1) + 15; 
+    app.levelTexture.dest.x = (app.width >> 1) - ((int)app.levelTexture.dest.w >> 1); 
     app.levelTexture.dest.y = (app.bHeightMin >> 1) + ((int)app.levelTexture.dest.h >> 1);
 
     // -- next blocks -- 
@@ -327,7 +330,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             app.displayRect.y = app.bHeightMin;
 
             //static text
-            setupStaticText(&app);
+            setupMainStaticText(&app);
+            setupKeyboardStaticText(&app);
+            setupTitleStaticText(&app);
 
             //keyboard rectangle
             keyRect.x = (app.width >> 1) - ((int)keyW/2);
@@ -340,6 +345,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             //score texture dest
             app.scoreTexture.dest.x = (app.bWidthMax+20);
             app.scoreTexture.dest.y = (app.bHeightMin+49);
+
+            //level texture dest
+            app.levelTexture.dest.x = (app.width >> 1) - ((int)app.levelTexture.dest.w >> 1); 
+            app.levelTexture.dest.y = (app.bHeightMin >> 1) + ((int)app.levelTexture.dest.h >> 1);
 
             //dest for title
             halfTitleWidth = (app.width >> 1) - (25 * TETROMINO_BLOCK_SIZE >> 1);
@@ -390,8 +399,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             lastChange = now;
         }
         //text
-        displayText(&app, "Tribute by LKerr42", -1, (app.height >> 1) + (TETROMINO_BLOCK_SIZE << 1), app.globalFont, 255, 255, 255);
-        displayText(&app, "Press Space to start", -1, 10, app.globalFont, 255, 255, 255);
+        displayTitleStaticText(&app);
 
         //display blocks
         for (int countB = 0; countB < 6; countB++) {
@@ -413,7 +421,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
     } else if (app.keyboardCard) {
-        displayText(&app, "-- Controls menu --", -1, 10, app.globalFont, 255, 255, 255);
+        displayKeyboardStaticText(&app);
 
         SDL_RenderTexture(app.renderer, app.keyboardText, NULL, &keyboardTextRect);
         SDL_RenderTexture(app.renderer, app.backgroundKeyboard, NULL, &keyRect);
@@ -434,7 +442,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         }
     } else if (app.winning) { 
         //Display the text
-        displayStaticText(&app);
+        displayMainStaticText(&app);
         SDL_RenderTexture(app.renderer, app.scoreTexture.tex, NULL, &app.scoreTexture.dest);
         SDL_RenderTexture(app.renderer, app.levelTexture.tex, NULL, &app.levelTexture.dest);
         //For some reason the firstBlocks int array corrupts between the start of this and the end of space being pressed

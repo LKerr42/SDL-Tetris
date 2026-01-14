@@ -66,7 +66,21 @@ void displayNextBlocks(struct appContext *app);
  * 
  * \param *app Pointer to the app context.
  */
-void displayStaticText(struct appContext *app);
+void displayMainStaticText(struct appContext *app);
+
+/**
+ * Render the static control menu text to the screen.
+ * 
+ * \param *app Pointer to the app context.
+ */
+void displayKeyboardStaticText(struct appContext *app);
+
+/**
+ * Render the static title screen text to the screen.
+ * 
+ * \param *app Pointer to the app context.
+ */
+void displayTitleStaticText(struct appContext *app);
 
 /**
  * Render the rectangles to clear a line.

@@ -182,10 +182,22 @@ void updateNextBlocks(appContext *app) {
     SDL_SetRenderTarget(app->renderer, NULL); // back to screen
 }
 
-void displayStaticText(appContext *app) {
+void displayMainStaticText(appContext *app) {
     // Get text dimensions
     SDL_FRect textRect = {0, 0, app->textW, app->textH};
     SDL_RenderTexture(app->renderer, app->staticText, NULL, &textRect);
+}
+
+void displayKeyboardStaticText(appContext *app) {
+    // Get text dimensions
+    SDL_FRect textRect = {0, 0, app->keyTextW, app->keyTextH};
+    SDL_RenderTexture(app->renderer, app->staticKeyboardText, NULL, &textRect);
+}
+
+void displayTitleStaticText(appContext *app) {
+    // Get text dimensions
+    SDL_FRect textRect = {0, 0, app->titleTextW, app->titleTextH};
+    SDL_RenderTexture(app->renderer, app->staticTitleText, NULL, &textRect);
 }
 
 void displayLineClearColumns(appContext *app) {

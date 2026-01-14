@@ -77,7 +77,7 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
             break;
         }
         case SDL_SCANCODE_P: {
-            writeToKeyboardText(app, "-P-", "Tap to pause/play", pressing, SDL_SCANCODE_P);
+            writeToKeyboardText(app, "-P-", "", pressing, SDL_SCANCODE_P);
             addKeyboardRects(app, 61, 9, 5, 7, pressing);
             break;
         }
@@ -218,17 +218,17 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
         
         // -- top row --
         case SDL_SCANCODE_ESCAPE: {
-            writeToKeyboardText(app, "-Esc-", "Tap to exit app", pressing, SDL_SCANCODE_ESCAPE);
+            writeToKeyboardText(app, "-Esc-", "Tap pause/play game", pressing, SDL_SCANCODE_ESCAPE);
             addKeyboardRects(app, 1, 1, 6, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F1: {
-            writeToKeyboardText(app, "-F1-", "", pressing, SDL_SCANCODE_F1);
+            writeToKeyboardText(app, "-F1-", "Tap to show/hide controls", pressing, SDL_SCANCODE_F1);
             addKeyboardRects(app, 8, 1, 4, 3, pressing);
             break;
         }
         case SDL_SCANCODE_F2: {
-            writeToKeyboardText(app, "-F2-", "", pressing, SDL_SCANCODE_F2);
+            writeToKeyboardText(app, "-F2-", "Tap to show/hide statistics", pressing, SDL_SCANCODE_F2);
             addKeyboardRects(app, 13, 1, 5, 3, pressing);
             break;
         }
@@ -283,7 +283,7 @@ void handleInputKeyboardCard(appContext *app, SDL_Scancode code, bool pressing) 
             break;
         }
         case SDL_SCANCODE_DELETE: {
-            writeToKeyboardText(app, "-Del-", "", pressing, SDL_SCANCODE_DELETE);
+            writeToKeyboardText(app, "-Del-", "Tap to exit app", pressing, SDL_SCANCODE_DELETE);
             addKeyboardRects(app, 79, 1, 6, 3, pressing);
             break;
         }
@@ -547,13 +547,19 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             }
             break;
         }
-        case SDL_SCANCODE_P: {
+        case SDL_SCANCODE_ESCAPE: {
             if (app->winning) {
                 app->userPause = !app->userPause;
             }
             break;
         }
-        case SDL_SCANCODE_ESCAPE: {
+        case SDL_SCANCODE_F1: {
+            break;
+        }
+        case SDL_SCANCODE_F2: {
+            break;
+        }
+        case SDL_SCANCODE_DELETE: {
             SDL_Event quit_event = {0};
             quit_event.type = SDL_EVENT_QUIT;
             SDL_PushEvent(&quit_event);

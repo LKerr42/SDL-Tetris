@@ -103,7 +103,6 @@ typedef struct appContext {
 
     int width, height; //Width and height of the window in pixels
     int bWidthMin, bWidthMax, bHeightMin, bHeightMax; //bounding box of the board in pixels
-    float textW, textH; // Width and height of the static text
     SDL_FRect displayRect; //display rectangle for the board
 
     //Control booleans
@@ -135,8 +134,16 @@ typedef struct appContext {
     textTexture textArray[300];
     SDL_Texture *keyboardText;
 
-    //static text and red backgrounds for keyboard texture
+    //static texts
     SDL_Texture *staticText;
+    float textW, textH; // Width and height of the main static text
+    SDL_Texture *staticKeyboardText;
+    float keyTextW, keyTextH; // Width and height of the keyboard static text
+    SDL_Texture *staticTitleText;
+    float titleTextW, titleTextH; // Width and height of the keyboard static text
+
+
+    //red backgrounds and keyboard texture
     SDL_Texture *backgroundKeyboard;
     SDL_Texture *keyboard;
 

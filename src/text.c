@@ -105,7 +105,7 @@ void writeToKeyboardText(appContext *app, char mainStr[], char subStr[], bool wr
     SDL_SetRenderTarget(app->renderer, NULL);
 }
 
-void setupStaticText(appContext *app) {
+void setupMainStaticText(appContext *app) {
     //board sizes 
     int widMinT = app->bWidthMin, widMaxT = app->bWidthMax;
     int higMinT = app->bHeightMin, higMaxT = app->bHeightMax;
@@ -127,7 +127,7 @@ void setupStaticText(appContext *app) {
 
     //setup destination rects
     SDL_Rect dest1 = {
-        (app->width >> 1) - (surface1->w >> 1) + 15, 
+        (app->width >> 1) - (surface1->w >> 1), 
         (higMinT >> 1) - textHeight, 
         surface1->w, 
         textHeight
@@ -157,6 +157,110 @@ void setupStaticText(appContext *app) {
     SDL_DestroySurface(surface2);
     SDL_DestroySurface(surface3);
     SDL_DestroySurface(surface4);
+    SDL_DestroySurface(combined);
+}
+
+void setupKeyboardStaticText(appContext *app) {
+    // Render text to a surface
+    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Surface* surface1 = TTF_RenderText_Blended(app->globalFont, "-- Controls menu --", 19, textColor);
+    SDL_Surface* surface2  = TTF_RenderText_Blended(app->globalFontS, "Double space to start, F1 to see controls in-game", 49, textColor);
+    if (!surface1 || !surface2) {
+        SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
+        return;
+    }
+
+    int textHeight = surface1->h;
+
+    //setup destination rects
+    SDL_Rect dest1 = {
+        (app->width / 2) - (surface1->w / 2), 
+        10, 
+        surface1->w, 
+        textHeight
+    };
+    SDL_Rect dest2 = {
+        (app->width / 2) - (surface2->w / 2), 
+        50, 
+        surface2->w, 
+        surface2->h
+    };
+
+    //setup combined surface
+    SDL_Surface *combined = SDL_CreateSurface(
+        (app->width / 2) + (surface2->w / 2), 
+        50+surface2->h, 
+        SDL_PIXELFORMAT_RGBA32
+    );
+
+    //copy to combined
+    SDL_BlitSurface(surface1, NULL, combined, &dest1);
+    SDL_BlitSurface(surface2, NULL, combined, &dest2);
+
+    // Convert surface to texture
+    app->staticKeyboardText = SDL_CreateTextureFromSurface(app->renderer, combined);
+    if (!app->staticKeyboardText) {
+        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_GetTextureSize(app->staticKeyboardText, &app->keyTextW, &app->keyTextH);
+
+    //destroy
+    SDL_DestroySurface(surface1);
+    SDL_DestroySurface(surface2);
+    SDL_DestroySurface(combined);
+}
+
+void setupTitleStaticText(appContext *app) {
+    // Render text to a surface
+    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Surface* surface1 = TTF_RenderText_Blended(app->globalFont, "Tribute by LKerr42", 18, textColor);
+    SDL_Surface* surface2  = TTF_RenderText_Blended(app->globalFont, "Press Space to start", 20, textColor);
+    if (!surface1 || !surface2) {
+        SDL_Log("TTF_RenderText_Blended Error: %s", SDL_GetError());
+        return;
+    }
+
+    int textHeight = surface1->h;
+
+    //setup destination rects
+    SDL_Rect dest1 = {
+        (app->width / 2) - (surface1->w / 2), 
+        (app->height >> 1) + (TETROMINO_BLOCK_SIZE << 1), 
+        surface1->w, 
+        textHeight
+    };
+    SDL_Rect dest2 = {
+        (app->width / 2) - (surface2->w / 2), 
+        10, 
+        surface2->w, 
+        textHeight
+    };
+
+    //setup combined surface
+    SDL_Surface *combined = SDL_CreateSurface(
+        (app->width / 2) + (surface2->w / 2), 
+        (app->height >> 1) + (TETROMINO_BLOCK_SIZE << 1) + textHeight, 
+        SDL_PIXELFORMAT_RGBA32
+    );
+
+    //copy to combined
+    SDL_BlitSurface(surface1, NULL, combined, &dest1);
+    SDL_BlitSurface(surface2, NULL, combined, &dest2);
+
+    // Convert surface to texture
+    app->staticTitleText = SDL_CreateTextureFromSurface(app->renderer, combined);
+    if (!app->staticTitleText) {
+        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_GetTextureSize(app->staticTitleText, &app->titleTextW, &app->titleTextH);
+
+    //destroy
+    SDL_DestroySurface(surface1);
+    SDL_DestroySurface(surface2);
     SDL_DestroySurface(combined);
 }
 
