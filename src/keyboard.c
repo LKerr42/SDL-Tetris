@@ -548,12 +548,23 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             break;
         }
         case SDL_SCANCODE_ESCAPE: {
-            if (app->winning) {
+            if (!app->showControls && app->winning) {
                 app->userPause = !app->userPause;
             }
             break;
         }
         case SDL_SCANCODE_F1: {
+            if ((app->showControls || !app->userPause) && app->winning) {
+                if (app->paused && !app->showControls) {
+                    app->showControls = !app->showControls;
+                    app->userPause = true;
+                } else {
+                    app->paused = !app->paused;
+                    app->showControls = !app->showControls; 
+                    app->userPause = false;
+                }
+            }
+
             break;
         }
         case SDL_SCANCODE_F2: {

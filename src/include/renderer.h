@@ -83,6 +83,13 @@ void displayKeyboardStaticText(struct appContext *app);
 void displayTitleStaticText(struct appContext *app);
 
 /**
+ * Render the in-game control menu popup.
+ * 
+ * \param *app Pointer to the app context.
+ */
+void displayControlsPopup(struct appContext *app);
+
+/**
  * Render the rectangles to clear a line.
  * 
  * \param *app Pointer to the app context.
@@ -109,5 +116,18 @@ void updateSnow(struct appContext *app);
  * \param *app Pointer to the app context.
  */
 void renderSnow(struct appContext *app);
+
+/**
+ * Draw a border to a surface of any colour or thickness.
+ * 
+ * \param *app      Pointer to the app context.
+ * \param *surf     Surface to render to.
+ * \param thickness Thickness in pixels of the border.
+ * \param r         Red RGB value for the border.
+ * \param g         Green RGB value for the border.
+ * \param b         Blue RGB value for the border.
+ * \param a         Alpha (opacity) value for the border.
+ */
+void drawSurfaceBorder(struct appContext *app, SDL_Surface *surf, int thickness, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 #endif

@@ -94,7 +94,7 @@ typedef struct snowflake {
 /**
  * appContext:
  * Represents the main context for the entire app, only one instance.
- * Contains all related to rendering, the window, sizes, textures, tetrominoes, and fonts
+ * Contains all related to rendering, the window, sizes, textures, tetrominoes, fonts, gmae control, etc...
  */
 typedef struct appContext {
     //Pointers to the window and renderer
@@ -107,7 +107,10 @@ typedef struct appContext {
 
     //Control booleans
     bool winning, keyboardCard, titleCard, loseCard;
-    bool showWireframe, paused, userPause, firstRun;
+    bool showWireframe, firstRun;
+
+    //Gameplay bools
+    bool paused, userPause, showControls;
 
     //Christmas controls
     bool Xmas;
@@ -141,7 +144,7 @@ typedef struct appContext {
     float keyTextW, keyTextH; // Width and height of the keyboard static text
     SDL_Texture *staticTitleText;
     float titleTextW, titleTextH; // Width and height of the keyboard static text
-
+    textTexture staticControlsText;
 
     //red backgrounds and keyboard texture
     SDL_Texture *backgroundKeyboard;

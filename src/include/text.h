@@ -67,4 +67,11 @@ void updateScoreTexture(appContext *app);
  */
 void updateLevelTexture(appContext *app);
 
+/**
+ * Initalise the texture for the text for the controls menu popup. 
+ * 
+ * \param *app Pointer to the main context
+ */
+void initControlsText(appContext *app);
+
 #endif

@@ -1,5 +1,6 @@
 #include "include/text.h"
 #include "include/app.h"
+#include "include/renderer.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -135,7 +136,7 @@ void setupMainStaticText(appContext *app) {
 
     SDL_Rect dest2 = {widMinT-180, higMinT+20, surface2->w, textHeight};
     SDL_Rect dest3 = {widMaxT+20, higMinT+20, surface3->w, textHeight};
-    SDL_Rect dest4 = {widMaxT+20, higMinT+(textHeight << 1)+60, surface4->w, textHeight};
+    SDL_Rect dest4 = {widMaxT+20, higMinT+(textHeight << 1)+50, surface4->w, textHeight};
 
     //copy to combined
     SDL_BlitSurface(surface1, NULL, combined, &dest1);
@@ -333,13 +334,95 @@ void updateLevelTexture(appContext *app) {
         textH
     };
     app->levelTexture.dest = temp;
+}
+
+void initControlsText(appContext *app) {
+    char strings[8][27] = {
+        "        -controls-",
+        "Esc Pause/Play  Del Quit",
+        "F1  Help        F2  Stats",
+        "R   Restart     Alt Wire",
+        "             ",
+        "Left/Right  Move L/R",
+        "Down        Soft/Hard Drop",
+        "A/D         Rotate CW/CCW"
+    };
+    SDL_Surface* surfaces[8];
+    SDL_Rect destRects[8];
+    SDL_Color textColor = {255, 255, 255, 255};
+    int textHeight = 0;
+
+    //setup combined surface
+    SDL_Surface *combined = SDL_CreateSurface(
+        800, 
+        500, 
+        SDL_PIXELFORMAT_RGBA32
+    );
+
+    Uint32 bgColor = SDL_MapRGBA(
+        SDL_GetPixelFormatDetails(combined->format), NULL,
+        0, 0, 0, 255   // solid background
+    );
+
+    SDL_FillSurfaceRect(combined, NULL, bgColor);
+
+    drawSurfaceBorder(app, combined, 10, 255, 255, 255, 255);
+
+    for (int i = 0; i < 8; i++) {
+        // Render text to a surface
+        surfaces[i] = TTF_RenderText_Blended(app->globalFont, strings[i], strlen(strings[i]), textColor);
+        if (!surfaces[i]) {
+            SDL_Log("TTF_RenderText_Blended Error, surface %d: %s", i, SDL_GetError());
+            return;
+        }
+
+        textHeight = surfaces[i]->h;
+
+        //setup destination rects
+        destRects[i] = (SDL_Rect){
+            75,
+            40 + (textHeight * (i+1)),
+            surfaces[i]->w,
+            surfaces[i]->h
+        };
+
+        //copy to combined
+        SDL_BlitSurface(surfaces[i], NULL, combined, &destRects[i]);
+
+        SDL_DestroySurface(surfaces[i]);
+    }
+
+    // Convert surface to texture
+    float textWidthf, textHeightf;
+    app->staticControlsText.tex = SDL_CreateTextureFromSurface(app->renderer, combined);
+    if (!app->staticControlsText.tex) {
+        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+        return;
+    }
+    SDL_GetTextureSize(app->staticControlsText.tex, &textWidthf, &textHeightf);
+
+    app->staticControlsText.dest = (SDL_FRect){
+        (app->width / 2) - 400,
+        (app->height / 2) - 250,
+        textWidthf,
+        textHeightf
+    };
 
     /*
-    SDL_Rect dest5 = {
-        (app->width >> 1) - (surface5->w >> 1) + 15, 
-        (higMinT >> 1) + (textHeight >> 1), 
-        surface5->w, 
-        surface5->h
+    //draw border
+    SDL_SetRenderTarget(app->renderer, app->staticControlsText.tex);
+    SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE); 
+
+    SDL_FRect border = {
+        0, 
+        0,
+        textWidthf,
+        textHeightf
     };
+
+    SDL_RenderRect(app->renderer, &border);
     */
+
+    //destroy combined
+    SDL_DestroySurface(combined);
 }

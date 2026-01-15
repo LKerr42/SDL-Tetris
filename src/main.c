@@ -173,12 +173,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     keyRect = temp;
 
     // -- fonts -- 
-    app.globalFont = TTF_OpenFont("assets\\NES.ttf", 25);
+    app.globalFont = TTF_OpenFont("assets\\NES.ttf", 25); //og 25, maybe 24
     if (app.globalFont == NULL) {
         SDL_Log("Failed to load font app.globalFont: %s", SDL_GetError());
     }
 
-    app.globalFontS = TTF_OpenFont("assets\\NES.ttf", 17);
+    app.globalFontS = TTF_OpenFont("assets\\NES.ttf", 17); //og 17 maybe 16
     if (app.globalFontS == NULL) {
         SDL_Log("Failed to load font app.globalFontS: %s", SDL_GetError());
     }
@@ -192,6 +192,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     setupMainStaticText(&app);
     setupKeyboardStaticText(&app);
     setupTitleStaticText(&app);
+    initControlsText(&app);
 
     // -- texture setup --
     app.boardTexture = SDL_CreateTexture(
@@ -629,11 +630,15 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             } 
         }
 
-        if (app.userPause) {
+        if (app.userPause && !app.showControls) {
             SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);
-        } 
+        } else if (app.showControls) {
+            SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
+            SDL_RenderFillRect(app.renderer, &pausedBackground);
+            displayControlsPopup(&app);
+        }
         renderSnow(&app);
     } else if (app.loseCard) {
         SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  // black, full alpha

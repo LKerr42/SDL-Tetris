@@ -200,6 +200,10 @@ void displayTitleStaticText(appContext *app) {
     SDL_RenderTexture(app->renderer, app->staticTitleText, NULL, &textRect);
 }
 
+void displayControlsPopup(struct appContext *app) {
+    SDL_RenderTexture(app->renderer, app->staticControlsText.tex, NULL, &app->staticControlsText.dest);
+}
+
 void displayLineClearColumns(appContext *app) {
     SDL_SetRenderTarget(app->renderer, app->boardTexture);
     SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
@@ -256,4 +260,21 @@ void renderSnow(appContext *app) {
         };
         SDL_RenderFillRect(app->renderer, &s);
     }
+}
+
+void drawSurfaceBorder(appContext *app, SDL_Surface *surf, int thickness, Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
+    Uint32 color = SDL_MapRGBA(
+        SDL_GetPixelFormatDetails(surf->format), NULL, 
+        r, g, b, a
+    );
+
+    SDL_Rect top    = {0, 0, surf->w, thickness};
+    SDL_Rect bottom = {0, surf->h - thickness, surf->w, thickness};
+    SDL_Rect left   = {0, 0, thickness, surf->h};
+    SDL_Rect right  = {surf->w - thickness, 0, thickness, surf->h};
+
+    SDL_FillSurfaceRect(surf, &top, color);
+    SDL_FillSurfaceRect(surf, &bottom, color);
+    SDL_FillSurfaceRect(surf, &left, color);
+    SDL_FillSurfaceRect(surf, &right, color);
 }
