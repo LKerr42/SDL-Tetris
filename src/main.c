@@ -14,6 +14,7 @@
 #include "include/tetromino.h"
 #include "include/renderer.h"
 #include "include/game_control.h"
+#include "include/stats.h"
 
 // Context for the whole app
 appContext app;
@@ -276,6 +277,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     updateNextBlocks(&app);
 
+    // -- user statistics --
+    initUserStats(&app);
+
     // -- audio --
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         SDL_Log("SDL_Init AUDIO failed: %s", SDL_GetError());
@@ -301,9 +305,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             break;
         }
         case SDL_EVENT_KEY_DOWN: {
-            if (app.keyboardCard) {
+            if (app.keyboardCard && !app.closing) {
                 handleInputKeyboardCard(&app, event->key.scancode, true);
-            } else {
+            } else if (!app.closing){
                 handleKeyboardInput(&app, event->key.scancode);
             }
             break;
@@ -358,6 +362,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             //paused backgroud rectangle
             pausedBackground.w = app.width;
             pausedBackground.h = app.height;
+
+            //controls box dest
+            app.staticControlsText.dest.x = (app.width / 2) - 400;
+            app.staticControlsText.dest.y = (app.height / 2) - 250;
 
             break;
         }
@@ -579,7 +587,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     app.clearInst.amountLines = linesCleared;
 
                     app.totalLinesCleared += linesCleared;
-                    printf("TotalLinesCleared = %d\n", app.totalLinesCleared);
                 }
 
                 runWireframes(&app, app.currentTet);
@@ -634,6 +641,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);
+        } else if (app.closing) {
+            SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
+            SDL_RenderFillRect(app.renderer, &pausedBackground);
+            displayText(&app, "closing...", -1, -1, app.globalFontL, 255, 255, 255);
         } else if (app.showControls) {
             SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
             SDL_RenderFillRect(app.renderer, &pausedBackground);

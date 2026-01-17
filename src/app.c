@@ -1,7 +1,8 @@
-#include <string.h>
 #include "include/app.h"
 #include "include/tetromino.h"
 #include "include/audio.h"
+#include <string.h>
+#include <stdio.h>
 
 void prependChar(char *str, char c) {
     size_t len = strlen(str);
@@ -42,7 +43,10 @@ void closeApp(appContext *app) {
             SDL_free(app->titleTetroes[j]);
         }
     }
-    
+
+    SDL_free(app->userStats);
+    fclose(app->dataFile);
+
     SDL_DestroyRenderer(app->renderer);
     SDL_DestroyWindow(app->window);
 }

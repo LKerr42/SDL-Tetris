@@ -1,0 +1,5 @@
+total_lines_cleared=0
+highest_level=0
+highest_score=0
+games_played=0
+spec_tets_dropped=0,0,0,0,0,0,0

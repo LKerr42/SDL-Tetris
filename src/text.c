@@ -339,13 +339,13 @@ void updateLevelTexture(appContext *app) {
 void initControlsText(appContext *app) {
     char strings[8][27] = {
         "        -controls-",
-        "Esc Pause/Play  Del Quit",
-        "F1  Help        F2  Stats",
-        "R   Restart     Alt Wire",
+        "Esc.Pause/Play  Del.Quit",
+        "F1..Help        F2..Stats",
+        "R...Restart     Alt.Wire",
         "             ",
-        "Left/Right  Move L/R",
-        "Down        Soft/Hard Drop",
-        "A/D         Rotate CW/CCW"
+        "Left/Right..Move L/R",
+        "Down........Soft/Hard Drop",
+        "A/D.........Rotate CW/CCW"
     };
     SDL_Surface* surfaces[8];
     SDL_Rect destRects[8];
@@ -365,7 +365,6 @@ void initControlsText(appContext *app) {
     );
 
     SDL_FillSurfaceRect(combined, NULL, bgColor);
-
     drawSurfaceBorder(app, combined, 10, 255, 255, 255, 255);
 
     for (int i = 0; i < 8; i++) {
@@ -407,21 +406,6 @@ void initControlsText(appContext *app) {
         textWidthf,
         textHeightf
     };
-
-    /*
-    //draw border
-    SDL_SetRenderTarget(app->renderer, app->staticControlsText.tex);
-    SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE); 
-
-    SDL_FRect border = {
-        0, 
-        0,
-        textWidthf,
-        textHeightf
-    };
-
-    SDL_RenderRect(app->renderer, &border);
-    */
 
     //destroy combined
     SDL_DestroySurface(combined);

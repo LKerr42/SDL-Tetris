@@ -6,6 +6,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 typedef struct tetromino tetromino;
+typedef struct stats stats;
 
 /**
  * Pixel size of all blocks
@@ -110,7 +111,7 @@ typedef struct appContext {
     bool showWireframe, firstRun;
 
     //Gameplay bools
-    bool paused, userPause, showControls;
+    bool paused, userPause, showControls, closing;
 
     //Christmas controls
     bool Xmas;
@@ -172,6 +173,11 @@ typedef struct appContext {
 
     //Filled blocks data
     setBlocks filledBlocks[22][12];
+
+    //User statsistics
+    FILE *dataFile;
+    stats *userStats;
+    char filePath[128];
 } appContext;
 
 /**
