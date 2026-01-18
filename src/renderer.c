@@ -200,10 +200,6 @@ void displayTitleStaticText(appContext *app) {
     SDL_RenderTexture(app->renderer, app->staticTitleText, NULL, &textRect);
 }
 
-void displayControlsPopup(struct appContext *app) {
-    SDL_RenderTexture(app->renderer, app->staticControlsText.tex, NULL, &app->staticControlsText.dest);
-}
-
 void displayLineClearColumns(appContext *app) {
     SDL_SetRenderTarget(app->renderer, app->boardTexture);
     SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);

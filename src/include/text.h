@@ -74,4 +74,27 @@ void updateLevelTexture(appContext *app);
  */
 void initControlsText(appContext *app);
 
+/**
+ * Build the texture for the text for the statistics page. Reads in all the data and builds the texture
+ * 
+ * \param *app Pointer to the main context
+ */
+void buildStatsText(appContext *app);
+
+/**
+ * Place a character at the begining of a string.
+ * 
+ * \param *str Pointer to the string to modify
+ * \param c    Character to add
+ */
+void prependChar(char *str, char c);
+
+/**
+ * Fill the begining of a i with any certain character until it reaches its max
+ * 
+ * \param *str Pointer to the string to modify
+ * \param c    Character to add
+ */
+char* fillIntegerStringToSize(int length, int value, char c);
+
 #endif

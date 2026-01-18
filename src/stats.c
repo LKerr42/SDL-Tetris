@@ -10,11 +10,12 @@ void printStats(appContext *app) {
     printf("highestLevel = %d\n", app->userStats->highestLevel);
     printf("highestScore = %d\n", app->userStats->highestScore);
     printf("gamesPlayed = %d\n", app->userStats->gamesPlayed);
+    printf("totalTetrises = %d\n", app->userStats->totalTetrises);
+
     printf("gameLinesCleared = %d\n", app->userStats->gameLinesCleared);
-    printf("gamePiecesDropped = %d\n", app->userStats->gamePiecesDropped);
-    printf("specTetsDropped = {\n");
+    printf("gameSpecTetsDropped = {\n");
     for (int i = 0; i < 7; i++) {
-        printf("    [%d]: %d\n", i, app->userStats->specTetsDropped[i]);
+        printf("    [%d]: %d\n", i, app->userStats->gameSpecTetsDropped[i]);
     }
     printf("}\n");
 }
@@ -22,10 +23,9 @@ void printStats(appContext *app) {
 void initUserStats(appContext *app) {
     app->userStats = calloc(1, sizeof(stats));
   
-    char *basePath = SDL_GetBasePath();
+    const char *basePath = SDL_GetBasePath();
     snprintf(app->filePath, sizeof(app->filePath), "%suserData\\stats.txt", basePath);
     SDL_free(basePath);
-    printf("%s\n", app->filePath);
 
     app->dataFile = fopen(app->filePath, "r");
     if (!app->dataFile) {
@@ -53,19 +53,9 @@ void initUserStats(appContext *app) {
         } else if (sscanf(line, "games_played=%d", &value) == 1) {
             printf("%d -- ", value);
             app->userStats->gamesPlayed = value;
-        } else if (strncmp(line, "spec_tets_dropped=", 18) == 0) {
-            char *values = strchr(line, '=');
-            if (values) {
-                values++; //move past '='
-
-                for (int i = 0; i < 7; i++) {
-                    app->userStats->specTetsDropped[i] = atoi(values);
-
-                    values = strchr(line, ','); 
-                    if (!values) break;
-                    values++; //move past ',' 
-                }
-            }
+        } else if (sscanf(line, "total_tetrises=%d", &value) == 1) { 
+            printf("%d -- ", value);
+            app->userStats->totalTetrises = value;
         } else {
             printf("Stupid -> ");
         }
@@ -85,13 +75,7 @@ void writeToStatsFile(appContext *app) {
     fprintf(app->dataFile, "highest_level=%d\n", app->userStats->highestLevel);
     fprintf(app->dataFile, "highest_score=%d\n", app->userStats->highestScore);
     fprintf(app->dataFile, "games_played=%d\n", app->userStats->gamesPlayed);
-    fprintf(app->dataFile, "spec_tets_dropped=");
-    for (int i = 0; i < 7; i++) {
-        fprintf(app->dataFile, "%d", app->userStats->specTetsDropped[i]);
-        if (i < 6) {
-            fprintf(app->dataFile, ",");
-        }
-    }
+    fprintf(app->dataFile, "total_tetrises=%d\n", app->userStats->totalTetrises);
 
     fclose(app->dataFile);
 }

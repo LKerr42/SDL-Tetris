@@ -70,7 +70,7 @@ typedef struct setBlocks {
 
 /**
  * lineClearAnim:
- * Data for animating line clears. Located in app.h because I'm not bothered for foward declaration
+ * Data for animating line clears. Located in app.h because I'm not bothered for forward declaration
  */
 typedef struct {
     bool active;
@@ -81,7 +81,7 @@ typedef struct {
 } lineClearAnim;
 
 /**
- * appContext:
+ * snowflake:
  * Represents a snowflake falling for the christmas theme. 
  */
 typedef struct snowflake {
@@ -111,7 +111,7 @@ typedef struct appContext {
     bool showWireframe, firstRun;
 
     //Gameplay bools
-    bool paused, userPause, showControls, closing;
+    bool paused, userPause, showControls, showStats, closing;
 
     //Christmas controls
     bool Xmas;
@@ -178,15 +178,8 @@ typedef struct appContext {
     FILE *dataFile;
     stats *userStats;
     char filePath[128];
+    textTexture statsTexture;
 } appContext;
-
-/**
- * Place a character at the begining of a string.
- * 
- * \param *str Pointer to the string to modify
- * \param c    Character to add
- */
-void prependChar(char *str, char c);
 
 /**
  * Close the app and window.

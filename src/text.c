@@ -1,7 +1,9 @@
 #include "include/text.h"
 #include "include/app.h"
 #include "include/renderer.h"
+#include "include/stats.h"
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 void displayText(appContext *app, char str[], int x, int y, TTF_Font* font, int r, int g, int b) {
@@ -409,4 +411,121 @@ void initControlsText(appContext *app) {
 
     //destroy combined
     SDL_DestroySurface(combined);
+}
+
+void buildStatsText(appContext *app) {
+    char *strings[17];
+    char *statStrings[6];
+    char scoreString[7];
+
+    for (int j = 0; j < 17; j++) {
+        strings[j] = calloc(1, sizeof(char));
+    }
+
+    statStrings[0] = fillIntegerStringToSize(3, app->userStats->gamesPlayed, '0');
+    statStrings[1] = fillIntegerStringToSize(3, app->userStats->totalLinesCleared, '0');
+    statStrings[2] = fillIntegerStringToSize(3, app->userStats->highestLevel, '0');
+    statStrings[3] = fillIntegerStringToSize(3, app->userStats->totalTetrises, '0');
+    statStrings[4] = fillIntegerStringToSize(7, app->userStats->highestScore, '0');
+    statStrings[5] = fillIntegerStringToSize(3, app->userStats->gameLinesCleared, '0');
+
+    SDL_asprintf(&strings[0], "             -Statistics-");
+    SDL_asprintf(&strings[1], "Games Played..%s  Lines Cleared..%s", statStrings[0], statStrings[1]);
+    SDL_asprintf(&strings[2], "Highest Level.%s  Total Tetrises.%s", statStrings[2], statStrings[3]);
+    SDL_asprintf(&strings[3], "Highest Score.................%s", statStrings[4]);
+    SDL_asprintf(&strings[5], "        Tetrominoes Dropped:");
+    SDL_asprintf(&strings[16], "    Lines Cleared This Game..%s", statStrings[5]);
+
+    for (int j = 0; j < 17; j++) {
+        if (strings[j][0] == '\0') {
+            SDL_asprintf(&strings[j], "                   ");
+        }
+    }
+
+    SDL_Surface* surfaces[15];
+    SDL_Rect destRects[15];
+    SDL_Color textColor = {255, 255, 255, 255};
+    int textHeight = 0;
+
+    //setup combined surface
+    SDL_Surface *combined = SDL_CreateSurface(
+        970, 
+        700, 
+        SDL_PIXELFORMAT_RGBA32
+    );
+
+    Uint32 bgColor = SDL_MapRGBA(
+        SDL_GetPixelFormatDetails(combined->format), NULL,
+        0, 0, 0, 255   // solid background
+    );
+
+    SDL_FillSurfaceRect(combined, NULL, bgColor);
+    drawSurfaceBorder(app, combined, 10, 255, 255, 255, 255);
+
+    for (int i = 0; i < 17; i++) {
+        // Render text to a surface
+        surfaces[i] = TTF_RenderText_Blended(app->globalFont, strings[i], strlen(strings[i]), textColor);
+        if (!surfaces[i]) {
+            SDL_Log("TTF_RenderText_Blended Error, surface %d: %s", i, SDL_GetError());
+            return;
+        }
+
+        textHeight = surfaces[i]->h;
+
+        //setup destination rects
+        destRects[i] = (SDL_Rect){
+            20,
+            20 + (textHeight * (i+1)),
+            surfaces[i]->w,
+            surfaces[i]->h
+        };
+
+        //copy to combined
+        SDL_BlitSurface(surfaces[i], NULL, combined, &destRects[i]);
+
+        SDL_DestroySurface(surfaces[i]);
+    }
+
+    // Convert surface to texture
+    float textWidthf, textHeightf;
+    app->statsTexture.tex = SDL_CreateTextureFromSurface(app->renderer, combined);
+    if (!app->statsTexture.tex) {
+        SDL_Log("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
+        return;
+    }
+    SDL_GetTextureSize(app->statsTexture.tex, &textWidthf, &textHeightf);
+
+    app->statsTexture.dest = (SDL_FRect){
+        (app->width / 2) - (combined->w/2),
+        (app->height / 2) - (combined->h/2),
+        textWidthf,
+        textHeightf
+    };
+
+    //destroy combined
+    SDL_DestroySurface(combined);
+}
+
+void prependChar(char *str, char c) {
+    size_t len = strlen(str);
+
+    memmove(str + 1, str, len + 1);
+
+    str[0] = c;
+}
+
+char* fillIntegerStringToSize(int length, int value, char c) {
+    char *str = calloc(1, sizeof(char));
+    SDL_asprintf(&str, "%d", value);
+    size_t startLength = strlen(str);
+    printf("address of the string: %p\n", (void *)str);
+    printf("startLength = %d\n", startLength);
+
+    while (startLength != length) {
+        printf("str = %s\n", str); 
+        prependChar(str, c);
+        startLength++;
+    }
+    printf("End of func\n\n");
+    return str;
 }

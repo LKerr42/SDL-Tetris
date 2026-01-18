@@ -83,13 +83,6 @@ void displayKeyboardStaticText(struct appContext *app);
 void displayTitleStaticText(struct appContext *app);
 
 /**
- * Render the in-game control menu popup.
- * 
- * \param *app Pointer to the app context.
- */
-void displayControlsPopup(struct appContext *app);
-
-/**
  * Render the rectangles to clear a line.
  * 
  * \param *app Pointer to the app context.

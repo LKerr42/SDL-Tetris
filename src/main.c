@@ -279,6 +279,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     // -- user statistics --
     initUserStats(&app);
+    buildStatsText(&app);
 
     // -- audio --
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
@@ -366,6 +367,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             //controls box dest
             app.staticControlsText.dest.x = (app.width / 2) - 400;
             app.staticControlsText.dest.y = (app.height / 2) - 250;
+
+            //stats box dest
+            app.statsTexture.dest.x = (app.width / 2) - (app.statsTexture.dest.w/2);
+            app.statsTexture.dest.y = (app.height / 2) - (app.statsTexture.dest.h/2);
 
             break;
         }
@@ -459,6 +464,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             updateNextBlocks(&app); 
             app.firstRun = false;
             *app.currentTet = *app.tetArray[app.currentBlock];
+            app.userStats->gamesPlayed++;
             SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
             sprintf(app.scoreString, "%s", "0000000");
 
@@ -531,6 +537,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 }
 
                 //reset block
+                app.userStats->gameSpecTetsDropped[app.currentBlock]++;
                 app.currentBlock = app.nextBlocks[0];
                 for (int n = 0; n < 3; n++) {
                     app.nextBlocks[n] = app.nextBlocks[n+1];
@@ -577,6 +584,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                         case 4:
                             //1200
                             localScore = 1200 * (app.level + 1);
+                            app.userStats->totalTetrises++;
                             break;
                     }
                     if (localScore % 10 != 0) {
@@ -637,18 +645,24 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             } 
         }
 
-        if (app.userPause && !app.showControls) {
+        if (app.userPause && !app.showControls && !app.showStats) {
             SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
             SDL_RenderFillRect(app.renderer, &pausedBackground);
             displayText(&app, "-Paused-", -1, -1, app.globalFontL, 255, 255, 255);
-        } else if (app.closing) {
-            SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
-            SDL_RenderFillRect(app.renderer, &pausedBackground);
-            displayText(&app, "closing...", -1, -1, app.globalFontL, 255, 255, 255);
         } else if (app.showControls) {
             SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
             SDL_RenderFillRect(app.renderer, &pausedBackground);
-            displayControlsPopup(&app);
+            SDL_RenderTexture(app.renderer, app.staticControlsText.tex, NULL, &app.staticControlsText.dest);
+        } else if (app.showStats) {
+            SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
+            SDL_RenderFillRect(app.renderer, &pausedBackground);
+            SDL_RenderTexture(app.renderer, app.statsTexture.tex, NULL, &app.statsTexture.dest);
+        }
+
+        if (app.closing) {
+            SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
+            SDL_RenderFillRect(app.renderer, &pausedBackground);
+            displayText(&app, "closing...", -1, -1, app.globalFontL, 255, 255, 255);
         }
         renderSnow(&app);
     } else if (app.loseCard) {

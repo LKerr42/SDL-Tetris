@@ -4,6 +4,7 @@
 #include "include/tetromino.h"
 #include "include/renderer.h"
 #include "include/text.h"
+#include "include/stats.h"
 #include <stdio.h>
 
 void resetBoard(appContext *app) {
@@ -48,6 +49,7 @@ void resetGame(appContext *app) {
     app->fallSpeed = 1000;
     app->totalLinesCleared = 0;
     app->level = 0;
+    app->userStats->gameLinesCleared = 0;
     updateLevelTexture(app);
 }
 
@@ -270,9 +272,17 @@ void updateLineClear(appContext *app, uint64_t now) {
         if (app->clearInst.column == 12) {
             if (app->totalLinesCleared / 10 > app->level) { //New level
                 app->level++;
+                if (app->level > app->userStats->highestLevel) {
+                    app->userStats->highestLevel = app->level;
+                }
                 app->fallSpeed -= 50;
                 updateLevelTexture(app);
             }
+            if (app->score > app->userStats->highestScore) {
+                app->userStats->highestScore = app->score;
+            }
+            app->userStats->totalLinesCleared++;
+            app->userStats->gameLinesCleared++;
             app->paused = false;
             moveBoardDown(app);
             runWireframes(app, app->currentTet);

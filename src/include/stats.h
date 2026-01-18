@@ -6,13 +6,16 @@
 typedef struct appContext appContext;
 
 typedef struct stats {
-    int totalLinesCleared;
-    int highestLevel;
-    int highestScore;
-    int gamesPlayed;
-    uint8_t specTetsDropped[7];
-    int gameLinesCleared;
-    int gamePiecesDropped;
+    //All time
+    unsigned int highestScore;
+    uint16_t totalLinesCleared;
+    uint16_t highestLevel;  
+    uint16_t gamesPlayed;
+    uint16_t totalTetrises;
+
+    //Game specific
+    uint8_t gameSpecTetsDropped[7];
+    uint16_t gameLinesCleared;
 } stats;
 
 /**
@@ -31,7 +34,7 @@ void initUserStats(appContext *app);
 
 /**
  * Reopen and write the data from the struct to the data file. 
- * Call on game end, app close, or if the file doesn't exist.
+ * Call on app close or if the file doesn't exist.
  * 
  * \param *app  Pointer to the app context
  */

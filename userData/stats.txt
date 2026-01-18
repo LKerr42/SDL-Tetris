@@ -1,5 +1,5 @@
-total_lines_cleared=0
-highest_level=0
-highest_score=0
-games_played=0
-spec_tets_dropped=0,0,0,0,0,0,0
+total_lines_cleared=113
+highest_level=20
+highest_score=28800
+games_played=22
+total_tetrises=18
