@@ -548,14 +548,14 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             break;
         }
         case SDL_SCANCODE_ESCAPE: {
-            if (!app->showControls && app->winning) {
+            if (!app->showControls && !app->showStats && app->winning) {
                 startSound(&sfx[LAND]);
                 app->userPause = !app->userPause;
             }
             break;
         }
         case SDL_SCANCODE_F1: {
-            if ((app->showControls || !app->userPause) && app->winning) {
+            if ((app->showControls || !app->userPause) && app->winning && !app->showStats) {
                 startSound(&sfx[OPEN]);
                 if (app->paused && !app->showControls) {
                     app->showControls = !app->showControls;
@@ -570,7 +570,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             break;
         }
         case SDL_SCANCODE_F2: {
-            if ((app->showStats || !app->userPause) && app->winning) {
+            if ((app->showStats || !app->userPause) && app->winning && !app->showControls) {
                 startSound(&sfx[OPEN]);
                 if (app->paused && !app->showStats) {
                     app->showStats = !app->showStats;

@@ -281,8 +281,7 @@ void updateLineClear(appContext *app, uint64_t now) {
             if (app->score > app->userStats->highestScore) {
                 app->userStats->highestScore = app->score;
             }
-            app->userStats->totalLinesCleared++;
-            app->userStats->gameLinesCleared++;
+
             app->paused = false;
             moveBoardDown(app);
             runWireframes(app, app->currentTet);

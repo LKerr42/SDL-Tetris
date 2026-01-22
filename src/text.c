@@ -2,6 +2,7 @@
 #include "include/app.h"
 #include "include/renderer.h"
 #include "include/stats.h"
+#include "include/tetromino.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -414,43 +415,50 @@ void initControlsText(appContext *app) {
 }
 
 void buildStatsText(appContext *app) {
-    char *strings[17];
-    char *statStrings[6];
+    char *strings[15];
+    char *statStrings[13];
     char scoreString[7];
 
-    for (int j = 0; j < 17; j++) {
+    for (int j = 0; j < arraySize(strings); j++) {
         strings[j] = calloc(1, sizeof(char));
     }
 
     statStrings[0] = fillIntegerStringToSize(3, app->userStats->gamesPlayed, '0');
     statStrings[1] = fillIntegerStringToSize(3, app->userStats->totalLinesCleared, '0');
-    statStrings[2] = fillIntegerStringToSize(3, app->userStats->highestLevel, '0');
+    statStrings[2] = fillIntegerStringToSize(2, app->userStats->highestLevel, '0');
     statStrings[3] = fillIntegerStringToSize(3, app->userStats->totalTetrises, '0');
     statStrings[4] = fillIntegerStringToSize(7, app->userStats->highestScore, '0');
     statStrings[5] = fillIntegerStringToSize(3, app->userStats->gameLinesCleared, '0');
 
+    for (int n = 0; n < 7; n++) {
+        statStrings[6+n] = fillIntegerStringToSize(3, app->userStats->gameSpecTetsDropped[n], '0');
+    }
+
     SDL_asprintf(&strings[0], "             -Statistics-");
     SDL_asprintf(&strings[1], "Games Played..%s  Lines Cleared..%s", statStrings[0], statStrings[1]);
-    SDL_asprintf(&strings[2], "Highest Level.%s  Total Tetrises.%s", statStrings[2], statStrings[3]);
+    SDL_asprintf(&strings[2], "Highest Level.%s   Total Tetrises.%s", statStrings[2], statStrings[3]);
     SDL_asprintf(&strings[3], "Highest Score.................%s", statStrings[4]);
-    SDL_asprintf(&strings[5], "        Tetrominoes Dropped:");
-    SDL_asprintf(&strings[16], "    Lines Cleared This Game..%s", statStrings[5]);
+    SDL_asprintf(&strings[5], "          -Stats this game-");
+    SDL_asprintf(&strings[6], "         Tetrominoes Dropped:");
+    SDL_asprintf(&strings[8],  "      %s      %s      %s     %s", statStrings[6], statStrings[7], statStrings[8], statStrings[9]); //"      000      000      000     000"
+    SDL_asprintf(&strings[11], "          %s      %s      %s", statStrings[10], statStrings[11], statStrings[12]);  //"          000      000      000"
+    SDL_asprintf(&strings[14], "         Lines Cleared..%s", statStrings[5]);
 
-    for (int j = 0; j < 17; j++) {
+    for (int j = 0; j < arraySize(strings); j++) {
         if (strings[j][0] == '\0') {
             SDL_asprintf(&strings[j], "                   ");
         }
     }
 
-    SDL_Surface* surfaces[15];
-    SDL_Rect destRects[15];
+    SDL_Surface* surfaces[20];
+    SDL_Rect destRects[20];
     SDL_Color textColor = {255, 255, 255, 255};
     int textHeight = 0;
 
     //setup combined surface
     SDL_Surface *combined = SDL_CreateSurface(
         970, 
-        700, 
+        550, 
         SDL_PIXELFORMAT_RGBA32
     );
 
@@ -462,7 +470,7 @@ void buildStatsText(appContext *app) {
     SDL_FillSurfaceRect(combined, NULL, bgColor);
     drawSurfaceBorder(app, combined, 10, 255, 255, 255, 255);
 
-    for (int i = 0; i < 17; i++) {
+    for (int i = 0; i < arraySize(strings); i++) {
         // Render text to a surface
         surfaces[i] = TTF_RenderText_Blended(app->globalFont, strings[i], strlen(strings[i]), textColor);
         if (!surfaces[i]) {
@@ -495,6 +503,50 @@ void buildStatsText(appContext *app) {
     }
     SDL_GetTextureSize(app->statsTexture.tex, &textWidthf, &textHeightf);
 
+    SDL_Texture *tempTex = SDL_CreateTexture(
+        app->renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        textWidthf,
+        textHeightf
+    );
+
+    SDL_SetRenderTarget(app->renderer, tempTex);
+    SDL_RenderTexture(app->renderer, app->statsTexture.tex, NULL, NULL);
+    SDL_SetRenderTarget(app->renderer, NULL);
+
+    int moveSide = 0, moveDown = 0, timesByMove = 0;
+
+    for (int k = 0; k < 7; k++) {
+        moveSide = (k <= 3) ? 80  : -730;
+        moveDown = (k <= 3) ? 265 : 365;
+        if (k <= 3 && k != 0) moveDown += 10;
+        
+        for (int l = 0; l < 4; l++) {
+            for (int m = 0; m < 4; m++) {
+                if (app->tetArray[k]->blocks[l][m].active == true) {
+                    SDL_FRect Srect = {
+                        m * TETROMINO_BLOCK_SIZE + moveSide + (230 * k),
+                        l * TETROMINO_BLOCK_SIZE + moveDown,
+                        TETROMINO_BLOCK_SIZE,
+                        TETROMINO_BLOCK_SIZE
+                    };
+
+                    displayBlockToTexture(
+                        app, Srect, app->tetArray[k]->r, 
+                        app->tetArray[k]->g, 
+                        app->tetArray[k]->b, 
+                        tempTex, false
+                    );                          
+                }
+            }
+        }
+    }
+
+    SDL_DestroyTexture(app->statsTexture.tex);
+    app->statsTexture.tex = tempTex;
+    
+
     app->statsTexture.dest = (SDL_FRect){
         (app->width / 2) - (combined->w/2),
         (app->height / 2) - (combined->h/2),
@@ -518,14 +570,11 @@ char* fillIntegerStringToSize(int length, int value, char c) {
     char *str = calloc(1, sizeof(char));
     SDL_asprintf(&str, "%d", value);
     size_t startLength = strlen(str);
-    printf("address of the string: %p\n", (void *)str);
-    printf("startLength = %d\n", startLength);
 
     while (startLength != length) {
-        printf("str = %s\n", str); 
         prependChar(str, c);
         startLength++;
     }
-    printf("End of func\n\n");
+
     return str;
 }

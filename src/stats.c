@@ -23,7 +23,7 @@ void printStats(appContext *app) {
 void initUserStats(appContext *app) {
     app->userStats = calloc(1, sizeof(stats));
   
-    const char *basePath = SDL_GetBasePath();
+    char *basePath = (char*)SDL_GetBasePath();
     snprintf(app->filePath, sizeof(app->filePath), "%suserData\\stats.txt", basePath);
     SDL_free(basePath);
 

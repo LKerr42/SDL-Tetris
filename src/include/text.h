@@ -90,10 +90,11 @@ void buildStatsText(appContext *app);
 void prependChar(char *str, char c);
 
 /**
- * Fill the begining of a i with any certain character until it reaches its max
+ * Fill the begining of a integer with any certain character until it reaches its max
  * 
- * \param *str Pointer to the string to modify
- * \param c    Character to add
+ * \param *str  Pointer to the string to modify
+ * \param value Value to turn into the string
+ * \param c     Character to add
  */
 char* fillIntegerStringToSize(int length, int value, char c);
 

@@ -593,8 +593,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     app.scoreTenth = localScore / 10;
 
                     app.clearInst.amountLines = linesCleared;
-
                     app.totalLinesCleared += linesCleared;
+                    app.userStats->gameLinesCleared += linesCleared;
+                    app.userStats->totalLinesCleared += linesCleared;
                 }
 
                 runWireframes(&app, app.currentTet);
