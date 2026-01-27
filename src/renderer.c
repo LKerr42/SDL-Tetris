@@ -219,10 +219,10 @@ void displayLineClearColumns(appContext *app) {
     };
 
     for (int i = 0; i < app->clearInst.amountLines; i++) {
-        leftColumnRect.y *= app->clearInst.rows[i+1];
+        leftColumnRect.y = TETROMINO_BLOCK_SIZE * app->clearInst.rows[i+1];
         SDL_RenderFillRect(app->renderer, &leftColumnRect);
 
-        rightColumnRect.y *= app->clearInst.rows[i+1];
+        rightColumnRect.y = TETROMINO_BLOCK_SIZE * app->clearInst.rows[i+1];
         SDL_RenderFillRect(app->renderer, &rightColumnRect);
     }
 
