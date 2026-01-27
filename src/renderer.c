@@ -204,16 +204,26 @@ void displayLineClearColumns(appContext *app) {
     SDL_SetRenderTarget(app->renderer, app->boardTexture);
     SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
 
-    SDL_FRect columnRect = {
-        TETROMINO_BLOCK_SIZE * app->clearInst.column,
-        TETROMINO_BLOCK_SIZE, //* app->clearInst.rows[1],
+    SDL_FRect leftColumnRect = {
+        TETROMINO_BLOCK_SIZE * app->clearInst.lColumn,
+        TETROMINO_BLOCK_SIZE,
+        TETROMINO_BLOCK_SIZE, 
+        TETROMINO_BLOCK_SIZE
+    };
+
+    SDL_FRect rightColumnRect = {
+        TETROMINO_BLOCK_SIZE * app->clearInst.rColumn,
+        TETROMINO_BLOCK_SIZE,
         TETROMINO_BLOCK_SIZE, 
         TETROMINO_BLOCK_SIZE
     };
 
     for (int i = 0; i < app->clearInst.amountLines; i++) {
-        columnRect.y = TETROMINO_BLOCK_SIZE * app->clearInst.rows[i+1];
-        SDL_RenderFillRect(app->renderer, &columnRect);
+        leftColumnRect.y *= app->clearInst.rows[i+1];
+        SDL_RenderFillRect(app->renderer, &leftColumnRect);
+
+        rightColumnRect.y *= app->clearInst.rows[i+1];
+        SDL_RenderFillRect(app->renderer, &rightColumnRect);
     }
 
     SDL_SetRenderTarget(app->renderer, NULL);

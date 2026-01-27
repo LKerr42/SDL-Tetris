@@ -590,7 +590,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                     if (localScore % 10 != 0) {
                         printf("FAILSAFE: score to add is not a multiple of 10\n");
                     }
-                    app.scoreTenth = localScore / 10;
+                    app.score += localScore;
 
                     app.clearInst.amountLines = linesCleared;
                     app.totalLinesCleared += linesCleared;

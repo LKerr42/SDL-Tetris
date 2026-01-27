@@ -28,6 +28,7 @@ void resetGame(appContext *app) {
     resetBoard(app);
     for (int i = 0; i < 7; i++) {
         app->scoreString[i] = '0';
+        app->userStats->gameSpecTetsDropped[i] = 0;
         if (i < 4) {
             app->nextBlocks[i] = SDL_rand(7);
         }
@@ -250,6 +251,10 @@ bool pushBackToLinesArray(appContext *app, int value) {
 }
 
 void startLineClear(appContext *app) {
+    int centre = 5;
+    app->clearInst.lColumn = centre-1;
+    app->clearInst.rColumn = centre;
+
     app->clearInst.active = true;
     app->clearInst.lastStep = SDL_GetTicks();
     app->paused = true;
@@ -261,15 +266,17 @@ void updateLineClear(appContext *app, uint64_t now) {
     if (now - app->clearInst.lastStep >= 90) {
         displayLineClearColumns(app);
 
-        app->clearInst.column++;
+        app->clearInst.lColumn--;
+        app->clearInst.rColumn++;
         app->clearInst.lastStep = now;
 
-        if (app->clearInst.column < 12) {
+        //adding score
+        /*if (app->clearInst.column < 12) {
             app->score += app->scoreTenth;
             updateScoreTexture(app);
-        }
+        }*/
 
-        if (app->clearInst.column == 12) {
+        if (app->clearInst.lColumn == 0 && app->clearInst.rColumn == 10) {
             if (app->totalLinesCleared / 10 > app->level) { //New level
                 app->level++;
                 if (app->level > app->userStats->highestLevel) {

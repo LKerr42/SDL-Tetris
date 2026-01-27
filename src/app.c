@@ -34,9 +34,7 @@ void closeApp(appContext *app) {
     SDL_free(app->currentTet);
     for (int j = 0; j < 7; j++) {
         SDL_free(app->tetArray[j]);
-        if (j < 6) {
-            SDL_free(app->titleTetroes[j]);
-        }
+        if (j < 6) SDL_free(app->titleTetroes[j]);
     }
 
     SDL_free(app->userStats);

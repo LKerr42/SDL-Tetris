@@ -77,6 +77,8 @@ typedef struct {
     int amountLines;
     int rows[5];
     int column;
+    int lColumn;
+    int rColumn;
     uint64_t lastStep;
 } lineClearAnim;
 

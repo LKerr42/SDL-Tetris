@@ -417,31 +417,33 @@ void initControlsText(appContext *app) {
 void buildStatsText(appContext *app) {
     char *strings[15];
     char *statStrings[13];
-    char scoreString[7];
+    char *tetDropStrings[7];
 
     for (int j = 0; j < arraySize(strings); j++) {
         strings[j] = calloc(1, sizeof(char));
     }
 
     statStrings[0] = fillIntegerStringToSize(3, app->userStats->gamesPlayed, '0');
-    statStrings[1] = fillIntegerStringToSize(3, app->userStats->totalLinesCleared, '0');
+    statStrings[1] = fillIntegerStringToSize(4, app->userStats->totalLinesCleared, '0');
     statStrings[2] = fillIntegerStringToSize(2, app->userStats->highestLevel, '0');
-    statStrings[3] = fillIntegerStringToSize(3, app->userStats->totalTetrises, '0');
+    statStrings[3] = fillIntegerStringToSize(4, app->userStats->totalTetrises, '0');
     statStrings[4] = fillIntegerStringToSize(7, app->userStats->highestScore, '0');
     statStrings[5] = fillIntegerStringToSize(3, app->userStats->gameLinesCleared, '0');
 
     for (int n = 0; n < 7; n++) {
+        tetDropStrings[n] = calloc(1, sizeof(char));
         statStrings[6+n] = fillIntegerStringToSize(3, app->userStats->gameSpecTetsDropped[n], '0');
     }
 
+    //Regular strings
     SDL_asprintf(&strings[0], "             -Statistics-");
-    SDL_asprintf(&strings[1], "Games Played..%s  Lines Cleared..%s", statStrings[0], statStrings[1]);
-    SDL_asprintf(&strings[2], "Highest Level.%s   Total Tetrises.%s", statStrings[2], statStrings[3]);
+    SDL_asprintf(&strings[1], "Games Played..%s Lines Cleared..%s", statStrings[0], statStrings[1]);
+    SDL_asprintf(&strings[2], "Highest Level.%s  Total Tetrises.%s", statStrings[2], statStrings[3]);
     SDL_asprintf(&strings[3], "Highest Score.................%s", statStrings[4]);
     SDL_asprintf(&strings[5], "          -Stats this game-");
     SDL_asprintf(&strings[6], "         Tetrominoes Dropped:");
-    SDL_asprintf(&strings[8],  "      %s      %s      %s     %s", statStrings[6], statStrings[7], statStrings[8], statStrings[9]); //"      000      000      000     000"
-    SDL_asprintf(&strings[11], "          %s      %s      %s", statStrings[10], statStrings[11], statStrings[12]);  //"          000      000      000"
+    //SDL_asprintf(&strings[8],  "      %s      %s      %s     %s", statStrings[6], statStrings[7], statStrings[8], statStrings[9]); //"      000      000      000     000"
+    //SDL_asprintf(&strings[11], "          %s      %s      %s", statStrings[10], statStrings[11], statStrings[12]);  //"          000      000      000"
     SDL_asprintf(&strings[14], "         Lines Cleared..%s", statStrings[5]);
 
     for (int j = 0; j < arraySize(strings); j++) {
@@ -450,9 +452,19 @@ void buildStatsText(appContext *app) {
         }
     }
 
+    //Tet dropped strings
+    SDL_asprintf(&tetDropStrings[0], "      %s", statStrings[6]); //same
+    SDL_asprintf(&tetDropStrings[1], "      %s", statStrings[7]); //same
+    SDL_asprintf(&tetDropStrings[2], "      %s", statStrings[8]); //same
+    SDL_asprintf(&tetDropStrings[3], "     %s", statStrings[9]);
+    SDL_asprintf(&tetDropStrings[4], "          %s", statStrings[10]);
+    SDL_asprintf(&tetDropStrings[5], "      %s", statStrings[11]); //same
+    SDL_asprintf(&tetDropStrings[6], "      %s", statStrings[12]); //same
+
+
     SDL_Surface* surfaces[20];
     SDL_Rect destRects[20];
-    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Color textColour;
     int textHeight = 0;
 
     //setup combined surface
@@ -470,9 +482,16 @@ void buildStatsText(appContext *app) {
     SDL_FillSurfaceRect(combined, NULL, bgColor);
     drawSurfaceBorder(app, combined, 10, 255, 255, 255, 255);
 
+    //Main loop
     for (int i = 0; i < arraySize(strings); i++) {
+        // Calculate text colour
+        textColour = (SDL_Color){255, 255, 255, 255};
+        if (i == 8 || i == 11) {
+            textColour = (SDL_Color){255, 0, 0, 255};
+        }
+
         // Render text to a surface
-        surfaces[i] = TTF_RenderText_Blended(app->globalFont, strings[i], strlen(strings[i]), textColor);
+        surfaces[i] = TTF_RenderText_Blended(app->globalFont, strings[i], strlen(strings[i]), textColour);
         if (!surfaces[i]) {
             SDL_Log("TTF_RenderText_Blended Error, surface %d: %s", i, SDL_GetError());
             return;
@@ -494,6 +513,50 @@ void buildStatsText(appContext *app) {
         SDL_DestroySurface(surfaces[i]);
     }
 
+    SDL_Rect tetDests[7];
+
+    int averageDropped = 0;
+    for (int a = 0; a < 7; a++) {
+        averageDropped += app->userStats->gameSpecTetsDropped[a];
+    }
+    averageDropped /= 7;
+    printf("Average: %d\n", averageDropped);
+
+    //Dropped tet loop
+    for (int i = 0; i < 7; i++) {
+        //Calculate colour
+        int distToAvg = app->userStats->gameSpecTetsDropped[i] - averageDropped;
+        printf("Dist of %d: %d\n", i, distToAvg);
+
+        int r = (200 + distToAvg * 4 < 255) ? (200 + distToAvg * 4) : (255);
+        textColour = (SDL_Color){r, 0, 0, 255};
+
+        // Render text to a surface
+        surfaces[i] = TTF_RenderText_Blended(app->globalFont, tetDropStrings[i], strlen(tetDropStrings[i]), textColour);
+        if (!surfaces[i]) {
+            SDL_Log("TTF_RenderText_Blended Error, tet surface %d: %s", i, SDL_GetError());
+            return;
+        }
+
+        //calculate destination
+        int row = (i < 4) ? 8 : 11;
+        int xPos = 0;
+        if (i == 4 || i == 0) {
+            xPos = 20;
+        } else {
+            xPos = tetDests[i-1].x + surfaces[i-1]->w;
+        }
+
+        tetDests[i] = (SDL_Rect){
+            xPos,
+            destRects[row].y,
+            surfaces[i]->w,
+            surfaces[i]->h
+        };
+
+        SDL_BlitSurface(surfaces[i], NULL, combined, &tetDests[i]);
+    }
+
     // Convert surface to texture
     float textWidthf, textHeightf;
     app->statsTexture.tex = SDL_CreateTextureFromSurface(app->renderer, combined);
@@ -503,6 +566,7 @@ void buildStatsText(appContext *app) {
     }
     SDL_GetTextureSize(app->statsTexture.tex, &textWidthf, &textHeightf);
 
+    //Draw tetrominoes
     SDL_Texture *tempTex = SDL_CreateTexture(
         app->renderer,
         SDL_PIXELFORMAT_RGBA8888,
@@ -517,6 +581,7 @@ void buildStatsText(appContext *app) {
 
     int moveSide = 0, moveDown = 0, timesByMove = 0;
 
+    //drawing loop
     for (int k = 0; k < 7; k++) {
         moveSide = (k <= 3) ? 80  : -730;
         moveDown = (k <= 3) ? 265 : 365;
