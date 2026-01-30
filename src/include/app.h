@@ -75,10 +75,15 @@ typedef struct setBlocks {
 typedef struct {
     bool active;
     int amountLines;
+    int amountBlocksToClear;
+    int counter;
+
     int rows[5];
-    int column;
     int lColumn;
     int rColumn;
+
+    bool lDone;
+    bool rDone;
     uint64_t lastStep;
 } lineClearAnim;
 
@@ -125,7 +130,9 @@ typedef struct appContext {
     //Score controls
     char scoreString[7];
     int score;
-    int scoreTenth;
+    int scoreToAdd;
+    int scorePortion;
+    int scorePortionRemainder;
 
     //Level controls
     int level;
@@ -135,6 +142,9 @@ typedef struct appContext {
 
     //data for clear lines animation
     lineClearAnim clearInst;
+    int lastCurrentBlock;
+    int lastFallXPos;
+    int lastRotation;
 
     //array of all the text textures in the control menu and its main texture
     textTexture textArray[300];
@@ -172,6 +182,7 @@ typedef struct appContext {
     //Control ints for next, held, and current tetroes
     int nextBlocks[4];
     int heldtet, currentBlock;
+    int currentRotation;
 
     //Filled blocks data
     setBlocks filledBlocks[22][12];

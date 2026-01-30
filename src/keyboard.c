@@ -462,10 +462,18 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             }
             break;
         }
+        case SDL_SCANCODE_UP: {
+            app->level++;
+            updateLevelTexture(app);
+            break;
+        }
         case SDL_SCANCODE_D: {
             if (!(app->paused || app->userPause)) {
                 rotateTetrominoCW(app, app->currentTet); 
                 runWireframes(app, app->currentTet);
+
+                app->currentRotation++;
+                if (app->currentRotation == 4) app->currentRotation = 0;
             }
             break;
         }
@@ -473,6 +481,9 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
             if (!(app->paused || app->userPause)) {
                 rotateTetrominoCCW(app, app->currentTet);
                 runWireframes(app, app->currentTet);
+
+                app->currentRotation--;
+                if (app->currentRotation == -1) app->currentRotation = 3;
             }
             break;
         }
@@ -519,6 +530,7 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
                 *app->currentTet = *app->tetArray[app->currentBlock];
                 app->currentTet->x = 4;
                 app->currentTet->y = 1;
+                app->currentRotation = 0;
 
                 updateNextBlocks(app);
                 runWireframes(app, app->currentTet);

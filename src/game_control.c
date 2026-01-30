@@ -232,7 +232,6 @@ void moveBoardDown(appContext *app) {
 void clearLinesStruct(appContext *app) {
     app->clearInst.rows[0] = 67;
     app->clearInst.amountLines = 0;
-    app->clearInst.column = 1;
     app->clearInst.active = false;
     for (int i = 1; i < 5; i++) {
         app->clearInst.rows[i] = -1;
@@ -250,36 +249,29 @@ bool pushBackToLinesArray(appContext *app, int value) {
     return false;
 }
 
-void startLineClear(appContext *app) {
-    int centre = 5;
+void startLineClear(appContext *app, int centre) { //TODO: use centre to calculate how much score to add per interation
+    //setup centre
     app->clearInst.lColumn = centre;
     app->clearInst.rColumn = centre+1;
 
+    calculateScorePortion(app, centre);
+
+    //setup other values
     app->clearInst.active = true;
     app->clearInst.lastStep = SDL_GetTicks();
+    app->clearInst.counter = 0;
     app->paused = true;
 }
 
 void updateLineClear(appContext *app, uint64_t now) {
     if (!app->clearInst.active || app->userPause) return;
 
-    if (now - app->clearInst.lastStep >= 100) { //90 was old
-        displayLineClearColumns(app);
-        printf("l: %d, r: %d  ", app->clearInst.lColumn, app->clearInst.rColumn);
+    //Beautiful edge case fix
+    if (app->clearInst.lColumn == 0) app->clearInst.lColumn = 1;
 
-        app->clearInst.lColumn--;
-        app->clearInst.rColumn++;
-        app->clearInst.lastStep = now;
-        printf("after: l: %d, r: %d\n", app->clearInst.lColumn, app->clearInst.rColumn);
-
-
-        //adding score
-        /*if (app->clearInst.column < 12) {
-            app->score += app->scoreTenth;
-            updateScoreTexture(app);
-        }*/
-
-        if (app->clearInst.lColumn == -1 || app->clearInst.rColumn == 13) {
+    //Main logic
+    if (now - app->clearInst.lastStep >= 100) { //100 was old (90 was older)
+        if (app->clearInst.lDone && app->clearInst.rDone) { //If both columns are done
             if (app->totalLinesCleared / 10 > app->level) { //New level
                 app->level++;
                 if (app->level > app->userStats->highestLevel) {
@@ -288,15 +280,128 @@ void updateLineClear(appContext *app, uint64_t now) {
                 app->fallSpeed -= 50;
                 updateLevelTexture(app);
             }
+            
             if (app->score > app->userStats->highestScore) {
                 app->userStats->highestScore = app->score;
             }
 
+            app->clearInst.lDone = false;
+            app->clearInst.rDone = false;
             app->paused = false;
+
             moveBoardDown(app);
             runWireframes(app, app->currentTet);
             clearLinesStruct(app);
             buildBoardTexture(app);
+            return;
+        } else { //Else display the columns and add to score
+            app->clearInst.counter++;
+            displayLineClearColumns(app);
+
+            app->score += app->scorePortion;
+            if (app->clearInst.counter == app->clearInst.amountBlocksToClear && app->scorePortionRemainder != 0) {
+                app->score += app->scorePortionRemainder;
+            }
+            printf("%d  ", app->score);
+            updateScoreTexture(app);
         }
+
+        //Update values
+        printf("l: %d, r: %d  ", app->clearInst.lColumn, app->clearInst.rColumn);
+        app->clearInst.lastStep = now;
+
+        if (app->clearInst.lColumn <= 1) {
+            app->clearInst.lDone = true;
+        } else {
+            app->clearInst.lColumn--;
+        }
+        if (app->clearInst.rColumn >= 10) {
+            app->clearInst.rDone = true;
+        } else {
+            app->clearInst.rColumn++;
+        }
+
+        printf("after: l: %d, r: %d\n", app->clearInst.lColumn, app->clearInst.rColumn);
+    }
+}
+
+int calculateCentreForLineClear(appContext *app) {
+    int finalCentre = 5;
+    printf("tetIndex = %d, xPos = %d\n", app->lastCurrentBlock, app->lastFallXPos);
+    switch (app->lastCurrentBlock) {
+        case 0: { //Long boy
+            finalCentre = app->lastFallXPos + 1;
+            if (app->lastRotation == 3) finalCentre--; 
+            break;
+        }
+        case 1: { //Left L
+            if (app->lastRotation == 0 || app->lastRotation == 3) {
+                finalCentre = app->lastFallXPos;
+            } else {
+                finalCentre = app->lastFallXPos + 1;
+            }
+            break;
+        }
+        case 2: { //Right L
+            if (app->lastRotation == 2 || app->lastRotation == 3) {
+                finalCentre = app->lastFallXPos;
+            } else {
+                finalCentre = app->lastFallXPos + 1;
+            }
+            break;
+        }
+        case 3: { //Square
+            finalCentre = app->lastFallXPos;
+            break;
+        }
+        case 4: { //Right squiggle
+            if (app->lastRotation == 3) {
+                finalCentre = app->lastFallXPos;
+            } else {
+                finalCentre = app->lastFallXPos + 1;
+            }
+            break;
+        }
+        case 5: { //T boy
+            if (app->lastRotation == 1) {
+                finalCentre = app->lastFallXPos + 1;
+            } else {
+                finalCentre = app->lastFallXPos;
+            }
+            break;
+        }
+        case 6: { //Left squiggle
+            if (app->lastRotation == 1) {
+                finalCentre = app->lastFallXPos + 1;
+            } else {
+                finalCentre = app->lastFallXPos;
+            }
+            break;
+        }
+    }
+
+    printf("centre = %d\n", finalCentre);
+    return finalCentre;
+}
+
+void calculateScorePortion(appContext *app, int centre) {
+    //setup score portion
+    if (centre > 5) {
+        app->clearInst.amountBlocksToClear = centre - ((centre-5) << 1);
+    } else {
+        app->clearInst.amountBlocksToClear = centre;
+    }
+    app->clearInst.amountBlocksToClear -= 10;
+    app->clearInst.amountBlocksToClear = SDL_abs(app->clearInst.amountBlocksToClear);
+    printf("amountBlocksToClear = %d\n", app->clearInst.amountBlocksToClear);
+
+    app->scorePortion = app->scoreToAdd / app->clearInst.amountBlocksToClear;
+    printf("scoreToAdd = %d\n", app->scoreToAdd);
+    printf("scorePortion = %d\n", app->scorePortion);
+    if (app->scoreToAdd % app->clearInst.amountBlocksToClear != 0) {
+        app->scorePortionRemainder = app->scoreToAdd % app->clearInst.amountBlocksToClear;
+        printf("There is remainder to add btw (its %d)\n", app->scorePortionRemainder);
+    } else {
+        app->scorePortionRemainder = 0;
     }
 }

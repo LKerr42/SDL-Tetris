@@ -81,9 +81,10 @@ bool pushBackToLinesArray(appContext *app, int value);
 /**
  * Start the animation for the line clearing. Sets the active bool to true and pauses the game
  * 
- * \param *app   Pointer to the app context
+ * \param *app     Pointer to the app context
+ * \param centre   Centre to clear the line from
  */
-void startLineClear(appContext *app);
+void startLineClear(appContext *app, int centre);
 
 /**
  * Start the animation for the line clearing. Sets the active bool to true and pauses the game
@@ -92,5 +93,20 @@ void startLineClear(appContext *app);
  * \param now    Ticks since launch in unsigned int 64 bits
  */
 void updateLineClear(appContext *app, uint64_t now);
+
+/**
+ * Calculate the centre to clear a line from. Just for readability really
+ * 
+ * \param *app       Pointer to the app context
+ */
+int calculateCentreForLineClear(appContext *app);
+
+/**
+ * Calculate the portion of score to add each line clear iteration
+ * 
+ * \param *app    Pointer to the app context
+ * \param centre  Centre value calculated by calculateCentreForLineClear
+ */
+void calculateScorePortion(appContext *app, int centre);
 
 #endif

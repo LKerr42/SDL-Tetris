@@ -537,6 +537,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 }
 
                 //reset block
+                app.lastCurrentBlock = app.currentBlock;
+                app.lastFallXPos = app.currentTet->x;
+                app.lastRotation = app.currentRotation;
+                
                 app.userStats->gameSpecTetsDropped[app.currentBlock]++;
                 app.currentBlock = app.nextBlocks[0];
                 for (int n = 0; n < 3; n++) {
@@ -546,6 +550,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 *app.currentTet = *app.tetArray[app.currentBlock];
                 app.currentTet->x = 4;
                 app.currentTet->y = 1;
+                app.currentRotation = 0;
                 
                 updateNextBlocks(&app);
 
@@ -565,8 +570,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
                 //update score
                 if (linesCleared > 0) {
-                    startLineClear(&app);
-
                     startSound(&sfx[CLEAR]);
                     switch (linesCleared) {
                         case 1:
@@ -587,15 +590,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             app.userStats->totalTetrises++;
                             break;
                     }
-                    if (localScore % 10 != 0) {
-                        printf("FAILSAFE: score to add is not a multiple of 10\n");
-                    }
-                    app.score += localScore;
+
+                    app.scoreToAdd = localScore;
+                    //updateScoreTexture(&app); //temp
 
                     app.clearInst.amountLines = linesCleared;
                     app.totalLinesCleared += linesCleared;
                     app.userStats->gameLinesCleared += linesCleared;
                     app.userStats->totalLinesCleared += linesCleared;
+
+                    startLineClear(&app, calculateCentreForLineClear(&app));
                 }
 
                 runWireframes(&app, app.currentTet);
@@ -624,6 +628,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 }
             }
         }
+
+        //temp, border for tetromino struct array
+        /*SDL_FRect tetBorder = {
+            app.bWidthMin + app.currentTet->x*TETROMINO_BLOCK_SIZE,
+            app.bHeightMin + app.currentTet->y*TETROMINO_BLOCK_SIZE,
+            80,
+            80
+        };
+        SDL_SetRenderDrawColor(app.renderer, 255, 0, 0, 255);
+        SDL_RenderRect(app.renderer, &tetBorder);*/
 
         int baseX = (app.bWidthMin-180) + (TETROMINO_BLOCK_SIZE << 1);
         int baseY = (app.bHeightMin+70);
