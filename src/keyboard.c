@@ -606,9 +606,19 @@ void handleKeyboardInput(appContext *app, SDL_Scancode code) {
         }
         case SDL_SCANCODE_C: {
             app->Xmas = !app->Xmas;
+            app->birthday = false;
             initSnow(app);
             resetTetColours(app);
             updateNextBlocks(app);
+            break;
+        }
+        case SDL_SCANCODE_B: {
+            app->birthday = !app->birthday;
+            app->Xmas = false;
+            initSnow(app);
+            resetTetColours(app);
+            updateNextBlocks(app);
+            break;
         }
     }
 }

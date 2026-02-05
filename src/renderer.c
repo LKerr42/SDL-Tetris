@@ -2,10 +2,12 @@
 #include "include/tetromino.h"
 #include "include/app.h"
 #include <stdio.h>
+#include <stdlib.h>
 
-void displayBlock(struct appContext *app, SDL_FRect rect, int r, int g, int b) {
+bool displayBlock(struct appContext *app, SDL_FRect rect, int r, int g, int b) {
     int i, j, cX = 0, cY = 0;
     int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
+    bool toReturn = true;
     
     int cR = SDL_clamp(r-45, 0, 255);
     int cG = SDL_clamp(g-45, 0, 255);
@@ -30,15 +32,20 @@ void displayBlock(struct appContext *app, SDL_FRect rect, int r, int g, int b) {
             }
             pixelRect.y = i;
             pixelRect.x = j;
-            SDL_RenderFillRect(app->renderer, &pixelRect);
+            if (!SDL_RenderFillRect(app->renderer, &pixelRect)) {
+                printf("SDL_RenderFillRect error: %s", SDL_GetError());
+                toReturn = false;
+            }
         }
         cX = 0;
     }
+    return toReturn;
 }
 
-void displayBlockToTexture(struct appContext *app, SDL_FRect rect, int r, int g, int b, SDL_Texture* texture, bool isWireframe) {
+bool displayBlockToTexture(struct appContext *app, SDL_FRect rect, int r, int g, int b, SDL_Texture* texture, bool isWireframe) {
     int i, j, cX = 0, cY = 0;
     int minX = rect.x, maxX = rect.w+rect.x, minY = rect.y, maxY = rect.h+rect.y;
+    bool toReturn = true;
     
     int cR = SDL_clamp(r-45, 0, 255);
     int cG = SDL_clamp(g-45, 0, 255);
@@ -69,12 +76,17 @@ void displayBlockToTexture(struct appContext *app, SDL_FRect rect, int r, int g,
             }
             pixelRect.y = i;
             pixelRect.x = j;
-            SDL_RenderFillRect(app->renderer, &pixelRect);
+            if (!SDL_RenderFillRect(app->renderer, &pixelRect)) {
+                printf("SDL_RenderFillRect error: %s", SDL_GetError());
+                toReturn = false;
+            }
+            
         }
         cX = 0;
     }
 
     SDL_SetRenderTarget(app->renderer, NULL);
+    return toReturn;
 }
 
 void buildBoardTexture(appContext *app) {
@@ -230,18 +242,34 @@ void displayLineClearColumns(appContext *app) {
 }
 
 void initSnow(appContext *app) {
-    if (!app->Xmas) return;
+    if (!(app->Xmas || app->birthday)) return;
+
+    colours birthdayColours[5] = {
+        {255, 179, 186},
+        {255, 223, 186},
+        {255, 255, 186},
+        {186, 255, 201},
+        {186, 225, 255}
+    };
+
     for (int i = 0; i < MAX_SNOW; i++) {
         app->snow[i].x = (int)SDL_rand(app->width);
         app->snow[i].y = (int)SDL_rand(app->height / 2);
         app->snow[i].speed = (int)SDL_rand(15) + 1;
         app->snow[i].drift = (int)SDL_rand(3);
         app->snow[i].size = (int)SDL_rand(3) + 3;
+
+        app->snow[i].flakeColour = calloc(1, sizeof(colours));
+        if (app->birthday) {
+            *app->snow[i].flakeColour = birthdayColours[SDL_rand(5)];
+        } else if (app->Xmas) {
+            *app->snow[i].flakeColour = (colours){255, 255, 255};
+        }
     }
 }
 
 void updateSnow(appContext *app) {
-    if (!app->Xmas) return; 
+    if (!(app->Xmas || app->birthday)) return;
     for (int i = 0; i < MAX_SNOW; i++) {
         app->snow[i].y += app->snow[i].speed;
         app->snow[i].x += addOrTake((int)SDL_rand(2)) + app->snow[i].drift;
@@ -254,10 +282,10 @@ void updateSnow(appContext *app) {
 }
 
 void renderSnow(appContext *app) {
-    if (!app->Xmas) return;
-    SDL_SetRenderDrawColor(app->renderer, 255, 255, 255, 255);
+    if (!(app->Xmas || app->birthday)) return;
 
     for (int i = 0; i < MAX_SNOW; i++) {
+        SDL_SetRenderDrawColor(app->renderer, app->snow[i].flakeColour->r, app->snow[i].flakeColour->g, app->snow[i].flakeColour->b, 255);
         SDL_FRect s = {
             app->snow[i].x, 
             app->snow[i].y,
@@ -283,4 +311,76 @@ void drawSurfaceBorder(appContext *app, SDL_Surface *surf, int thickness, Uint8 
     SDL_FillSurfaceRect(surf, &bottom, color);
     SDL_FillSurfaceRect(surf, &left, color);
     SDL_FillSurfaceRect(surf, &right, color);
+}
+
+void initStartBackground(appContext *app) {
+    for (int i = 0; i < MAX_BG_TETROES; i++) {
+        //allocate memory
+        app->backgroundTets[i] = calloc(1, sizeof(tetromino));
+
+        //initalise values
+        *app->backgroundTets[i] = *app->tetArray[SDL_rand(7)];
+
+        app->backgroundTets[i]->x = SDL_rand(app->width / TETROMINO_BLOCK_SIZE + 1) * TETROMINO_BLOCK_SIZE;
+        app->backgroundTets[i]->y = SDL_rand(app->height / TETROMINO_BLOCK_SIZE + 1) * TETROMINO_BLOCK_SIZE;
+
+        //temp, add to texture
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                if (app->backgroundTets[i]->blocks[y][x].active) {
+                    SDL_FRect Brect = {
+                        app->backgroundTets[i]->x + (x * TETROMINO_BLOCK_SIZE),
+                        app->backgroundTets[i]->y + (y * TETROMINO_BLOCK_SIZE),
+                        TETROMINO_BLOCK_SIZE,
+                        TETROMINO_BLOCK_SIZE
+                    };
+                    displayBlockToTexture(
+                        app, Brect, 
+                        app->backgroundTets[i]->r, 
+                        app->backgroundTets[i]->g, 
+                        app->backgroundTets[i]->b, 
+                        app->startBGTexture, false
+                    );
+                }
+            }
+        }
+    }
+}
+
+void updateStartBackground(appContext *app) {
+    //clear the texture
+    SDL_SetRenderTarget(app->renderer, app->startBGTexture);
+    SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
+    SDL_RenderClear(app->renderer);
+    SDL_SetRenderTarget(app->renderer, NULL);
+
+    int randOpp = app->width / TETROMINO_BLOCK_SIZE + 1;
+
+    for (int i = 0; i < MAX_BG_TETROES; i++) {
+        app->backgroundTets[i]->y += 5;
+        if (app->backgroundTets[i]->y >= app->height) {
+            app->backgroundTets[i]->x = SDL_rand(randOpp) * TETROMINO_BLOCK_SIZE;
+            app->backgroundTets[i]->y = 0;
+        }
+
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                if (app->backgroundTets[i]->blocks[y][x].active) {
+                    SDL_FRect Brect = {
+                        app->backgroundTets[i]->x + (x * TETROMINO_BLOCK_SIZE),
+                        app->backgroundTets[i]->y + (y * TETROMINO_BLOCK_SIZE),
+                        TETROMINO_BLOCK_SIZE,
+                        TETROMINO_BLOCK_SIZE
+                    };
+                    displayBlockToTexture(
+                        app, Brect, 
+                        app->backgroundTets[i]->r, 
+                        app->backgroundTets[i]->g, 
+                        app->backgroundTets[i]->b, 
+                        app->startBGTexture, false
+                    );
+                }
+            }
+        }
+    }
 }

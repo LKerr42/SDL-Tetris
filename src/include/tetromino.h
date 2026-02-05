@@ -36,7 +36,7 @@ typedef struct tetromino {
  * colours:
  * Representation of a RGB value, implimented for ease of use of colours
  */
-typedef struct {
+typedef struct colours {
     int r;
     int g;
     int b;

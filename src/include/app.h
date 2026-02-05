@@ -7,6 +7,7 @@
 
 typedef struct tetromino tetromino;
 typedef struct stats stats;
+typedef struct colours colours;
 
 /**
  * Pixel size of all blocks
@@ -21,6 +22,11 @@ typedef struct stats stats;
  * Maximum snow to display while snowing
  */
 #define MAX_SNOW 400
+
+/**
+ * Maximum tetrominoes to display in the start background
+ */
+#define MAX_BG_TETROES 30
 
 #define CLEAR     0 
 #define HOLYMOLY  1
@@ -97,6 +103,7 @@ typedef struct snowflake {
     int speed;
     int drift;
     int size;
+    colours *flakeColour;
 } snowflake;
 
 /**
@@ -120,8 +127,8 @@ typedef struct appContext {
     //Gameplay bools
     bool paused, userPause, showControls, showStats, closing;
 
-    //Christmas controls
-    bool Xmas;
+    //Holiday controls
+    bool Xmas, birthday;
     snowflake snow[MAX_SNOW];
 
     //Double press control counters
@@ -150,6 +157,13 @@ typedef struct appContext {
     textTexture textArray[300];
     SDL_Texture *keyboardText;
 
+    //red backgrounds and keyboard texture
+    SDL_Texture *backgroundKeyboard;
+    SDL_Texture *keyboard;
+
+    //start background texture
+    SDL_Texture *startBGTexture;
+
     //static texts
     SDL_Texture *staticText;
     float textW, textH; // Width and height of the main static text
@@ -159,11 +173,7 @@ typedef struct appContext {
     float titleTextW, titleTextH; // Width and height of the keyboard static text
     textTexture staticControlsText;
 
-    //red backgrounds and keyboard texture
-    SDL_Texture *backgroundKeyboard;
-    SDL_Texture *keyboard;
-
-    //baord and ui textures
+    //board and ui textures
     SDL_Texture *boardTexture;
     SDL_Texture *nextTexture;
     textTexture scoreTexture;
@@ -178,6 +188,7 @@ typedef struct appContext {
     tetromino *tetArray[7];
     tetromino *titleTetroes[6];
     tetromino *wireframeTet;
+    tetromino *backgroundTets[MAX_BG_TETROES]; //tetrominoes for start card background
 
     //Control ints for next, held, and current tetroes
     int nextBlocks[4];
@@ -192,6 +203,7 @@ typedef struct appContext {
     stats *userStats;
     char filePath[128];
     textTexture statsTexture;
+    
 } appContext;
 
 /**

@@ -1,5 +1,5 @@
-total_lines_cleared=1707
+total_lines_cleared=2037
 highest_level=18
 highest_score=359040
-games_played=264
-total_tetrises=227
+games_played=288
+total_tetrises=286

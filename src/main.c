@@ -50,7 +50,9 @@ colours colour[7];
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
-    // -- app setup --
+    printf("sizeof(app) = %zu bytes, %f KB\n", sizeof(app), sizeof(app) / 1000.0f);
+
+    // -- value setup --
     app.width = 1000;
     app.height = 750;
 
@@ -61,6 +63,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.showWireframe = true;
     app.firstRun = true;
     app.Xmas = false;
+    app.birthday = false;
 
     app.heldtet = -1;
     app.amountPressed = -1;
@@ -68,8 +71,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.fallSpeed = 1000;
     clearLinesStruct(&app);
 
-    SDL_FRect temp4 = {0, 0, app.width, app.height};
-    pausedBackground = temp4;
+    pausedBackground = (SDL_FRect){0, 0, app.width, app.height};
 
     // -- time setup --
     time_t rawfear;
@@ -80,6 +82,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     if (info->tm_mon == 11 && info->tm_mday == 25) {
         app.Xmas = true;
+        initSnow(&app);
+    } else if (info->tm_mon == 0 && info->tm_mday == 28) {
+        app.birthday = true;
         initSnow(&app);
     }
 
@@ -124,7 +129,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     // -- SDL init --
-    SDL_SetAppMetadata("Play Tetis!", "1.2.2", "com/LKerr42/SDL-Tetris.github");
+    SDL_SetAppMetadata("Play Tetis!", "1.2.3", "com/LKerr42/SDL-Tetris.github");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -136,7 +141,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    // -- window --
+    // -- window and renderer --
     bool wind = SDL_CreateWindowAndRenderer(
         "Play Tetris!", 
         app.width, app.height, 
@@ -147,6 +152,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
+
+    SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
 
     // -- icon --
     icon = IMG_Load("assets/iconT.ico");
@@ -170,8 +177,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     int keyX = (app.width >> 1) - (intKeyW >> 1);
     int keyY = (app.height >> 1) - (intKeyH >> 1);
 
-    SDL_FRect temp = {keyX, keyY-5, intKeyW, intKeyH};
-    keyRect = temp;
+    keyRect = (SDL_FRect){keyX, keyY-5, intKeyW, intKeyH};
 
     // -- fonts -- 
     app.globalFont = TTF_OpenFont("assets\\NES.ttf", 25); //og 25, maybe 24
@@ -240,8 +246,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         printf("SDL_CreateTexture failed: %s\n", SDL_GetError());
     }
 
-    SDL_FRect temp2 = {keyX, keyY+intKeyH+5, intKeyW, 100};
-    keyboardTextRect = temp2;
+    keyboardTextRect = (SDL_FRect){keyX, keyY+intKeyH+5, intKeyW, 100};
 
     app.scoreTexture.tex = SDL_CreateTexture(
         app.renderer,
@@ -270,6 +275,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     app.levelTexture.dest.x = (app.width >> 1) - ((int)app.levelTexture.dest.w >> 1); 
     app.levelTexture.dest.y = (app.bHeightMin >> 1) + ((int)app.levelTexture.dest.h >> 1);
 
+    app.startBGTexture = SDL_CreateTexture(
+        app.renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        app.width, app.height
+    );
+
+    initStartBackground(&app);
+
     // -- next blocks -- 
     for (int k = 0; k < 4; k++) {
         app.nextBlocks[k] = SDL_rand(7);
@@ -288,9 +302,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     char *wavPath = NULL;
     for (int i = 0; i < SDL_arraysize(sfx); i++) {
-        SDL_asprintf(&wavPath, "%s%s.wav", "assets/audio/", fileNames[i]);
+        SDL_asprintf(&wavPath, "assets/audio/%s.wav", fileNames[i]);
         initaliseAudioFile(&sfx[i], wavPath);
     }
+    SDL_free(wavPath);
     initaliseAudioFile(&mainTheme, "assets/audio/Tetris.wav");
     SDL_SetAudioStreamGain(mainTheme.stream, 0.5f);
     SDL_SetAudioStreamGain(sfx[LAND].stream, 1.5f);
@@ -382,7 +397,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 now = SDL_GetTicks();
-    static Uint64 lastFallTime = 0, lastSnowFall = 0, lastChange = 0, lastPress = 0, lastPressDown = 0;
+    static Uint64 lastFallTime = 0, lastSnowFall = 0, lastChange = 0, lastPress = 0, lastPressDown = 0, lastBGTetFall = 0;
 
     SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 255);
     SDL_RenderClear(app.renderer);
@@ -412,6 +427,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             currentMove++;
             lastChange = now;
         }
+        if (now - lastBGTetFall >= 50) {
+            updateStartBackground(&app);
+            lastBGTetFall = now;
+        }
+        //display background
+        SDL_RenderTexture(app.renderer, app.startBGTexture, NULL, &pausedBackground);
+
+        SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 128);
+        SDL_RenderFillRect(app.renderer, &pausedBackground);
+
         //text
         displayTitleStaticText(&app);
 
@@ -465,7 +490,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             app.firstRun = false;
             *app.currentTet = *app.tetArray[app.currentBlock];
             app.userStats->gamesPlayed++;
-            SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
             sprintf(app.scoreString, "%s", "0000000");
 
             runWireframes(&app, app.currentTet);
@@ -590,7 +614,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                             app.userStats->totalTetrises++;
                             break;
                     }
-
+ 
                     app.scoreToAdd = localScore;
                     //updateScoreTexture(&app); //temp
 

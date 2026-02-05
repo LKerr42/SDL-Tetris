@@ -17,8 +17,10 @@ struct appContext;
  * \param r     R RGB value
  * \param g     G RGB value
  * \param b     B RGB value
+ * 
+ * \returns True on success, false on a SDL_RenderFillRect error
  */
-void displayBlock(struct appContext *app, SDL_FRect rect, int r, int g, int b);
+bool displayBlock(struct appContext *app, SDL_FRect rect, int r, int g, int b);
 
 /**
  * Display a block to a texture.
@@ -30,8 +32,10 @@ void displayBlock(struct appContext *app, SDL_FRect rect, int r, int g, int b);
  * \param b           B RGB value
  * \param texture     texture to render to
  * \param isWireFrame Display as a wireframe or not
+ * 
+ * \returns True on success, false on a SDL_RenderFillRect error
  */
-void displayBlockToTexture(struct appContext *app, SDL_FRect rect, int r, int g, int b, SDL_Texture* texture, bool isWireframe);
+bool displayBlockToTexture(struct appContext *app, SDL_FRect rect, int r, int g, int b, SDL_Texture* texture, bool isWireframe);
 
 /**
  * Compute the texture for the main board.
@@ -122,5 +126,20 @@ void renderSnow(struct appContext *app);
  * \param a         Alpha (opacity) value for the border.
  */
 void drawSurfaceBorder(struct appContext *app, SDL_Surface *surf, int thickness, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+/**
+ * Initalise the background for the start card background
+ * 
+ * \param *app  Pointer to the app context.
+ */
+void initStartBackground(struct appContext *app);
+
+
+/**
+ * Update and render to the texture the background for the start card background
+ * 
+ * \param *app  Pointer to the app context.
+ */
+void updateStartBackground(struct appContext *app);
 
 #endif

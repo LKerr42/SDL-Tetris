@@ -29,7 +29,6 @@ void initUserStats(appContext *app) {
 
     app->dataFile = fopen(app->filePath, "r");
     if (!app->dataFile) {
-        printf("error: unable to open %s\n", app->filePath);
         writeToStatsFile(app);
     }
 
@@ -42,22 +41,15 @@ void initUserStats(appContext *app) {
         }
 
         if (sscanf(line, "total_lines_cleared=%d", &value) == 1) {
-            printf("%d -- ", value);
             app->userStats->totalLinesCleared = value;
         } else if (sscanf(line, "highest_level=%d", &value) == 1) {
-            printf("%d -- ", value);
             app->userStats->highestLevel = value;
         } else if (sscanf(line, "highest_score=%d", &value) == 1) {
-            printf("%d -- ", value);
             app->userStats->highestScore = value;
         } else if (sscanf(line, "games_played=%d", &value) == 1) {
-            printf("%d -- ", value);
             app->userStats->gamesPlayed = value;
         } else if (sscanf(line, "total_tetrises=%d", &value) == 1) { 
-            printf("%d -- ", value);
             app->userStats->totalTetrises = value;
-        } else {
-            printf("Stupid -> ");
         }
 
         printf("%s\n", line);

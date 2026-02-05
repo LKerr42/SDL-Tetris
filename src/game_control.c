@@ -393,6 +393,7 @@ void calculateScorePortion(appContext *app, int centre) {
     }
     app->clearInst.amountBlocksToClear -= 10;
     app->clearInst.amountBlocksToClear = SDL_abs(app->clearInst.amountBlocksToClear);
+
     printf("amountBlocksToClear = %d\n", app->clearInst.amountBlocksToClear);
 
     app->scorePortion = app->scoreToAdd / app->clearInst.amountBlocksToClear;
