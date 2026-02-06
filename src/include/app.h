@@ -60,7 +60,7 @@ typedef struct colours colours;
 typedef struct {
     SDL_Texture *tex;
     SDL_FRect dest;
-} textTexture;
+} textureElement;
 
 /**
  * setBlocks:
@@ -145,7 +145,7 @@ typedef struct appContext {
     int level;
     int fallSpeed;
     int totalLinesCleared;
-    textTexture levelTexture;
+    textureElement levelTexture;
 
     //data for clear lines animation
     lineClearAnim clearInst;
@@ -154,7 +154,7 @@ typedef struct appContext {
     int lastRotation;
 
     //array of all the text textures in the control menu and its main texture
-    textTexture textArray[300];
+    textureElement textArray[300];
     SDL_Texture *keyboardText;
 
     //red backgrounds and keyboard texture
@@ -163,6 +163,7 @@ typedef struct appContext {
 
     //start background texture
     SDL_Texture *startBGTexture;
+    textureElement BGtetroTextures[MAX_BG_TETROES];
 
     //static texts
     SDL_Texture *staticText;
@@ -171,12 +172,12 @@ typedef struct appContext {
     float keyTextW, keyTextH; // Width and height of the keyboard static text
     SDL_Texture *staticTitleText;
     float titleTextW, titleTextH; // Width and height of the keyboard static text
-    textTexture staticControlsText;
+    textureElement staticControlsText;
 
     //board and ui textures
     SDL_Texture *boardTexture;
     SDL_Texture *nextTexture;
-    textTexture scoreTexture;
+    textureElement scoreTexture;
 
     //Three sizes of the global font
     TTF_Font* globalFont;
@@ -188,7 +189,6 @@ typedef struct appContext {
     tetromino *tetArray[7];
     tetromino *titleTetroes[6];
     tetromino *wireframeTet;
-    tetromino *backgroundTets[MAX_BG_TETROES]; //tetrominoes for start card background
 
     //Control ints for next, held, and current tetroes
     int nextBlocks[4];
@@ -202,7 +202,7 @@ typedef struct appContext {
     FILE *dataFile;
     stats *userStats;
     char filePath[128];
-    textTexture statsTexture;
+    textureElement statsTexture;
     
 } appContext;
 

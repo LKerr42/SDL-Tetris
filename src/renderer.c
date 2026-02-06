@@ -314,8 +314,56 @@ void drawSurfaceBorder(appContext *app, SDL_Surface *surf, int thickness, Uint8 
 }
 
 void initStartBackground(appContext *app) {
+    int textureSize = 4 * TETROMINO_BLOCK_SIZE;
+
     for (int i = 0; i < MAX_BG_TETROES; i++) {
-        //allocate memory
+        //create texture element
+        app->BGtetroTextures[i].tex = SDL_CreateTexture(
+            app->renderer,
+            SDL_PIXELFORMAT_RGBA32,
+            SDL_TEXTUREACCESS_TARGET,
+            textureSize, textureSize
+        );
+
+        app->BGtetroTextures[i].dest = (SDL_FRect){
+            SDL_rand(app->width / TETROMINO_BLOCK_SIZE + 1) * TETROMINO_BLOCK_SIZE,
+            SDL_rand(app->height / TETROMINO_BLOCK_SIZE + 1) * TETROMINO_BLOCK_SIZE,
+            textureSize,
+            textureSize
+        };
+
+        //add tetromino to texture
+        tetromino TetAddToTexture = *app->tetArray[SDL_rand(7)];
+
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                if (TetAddToTexture.blocks[y][x].active) {
+                    SDL_FRect Brect = {
+                        TetAddToTexture.x + (x * TETROMINO_BLOCK_SIZE),
+                        TetAddToTexture.y + (y * TETROMINO_BLOCK_SIZE),
+                        TETROMINO_BLOCK_SIZE,
+                        TETROMINO_BLOCK_SIZE
+                    };
+                    displayBlockToTexture(
+                        app, Brect, 
+                        TetAddToTexture.r, 
+                        TetAddToTexture.g, 
+                        TetAddToTexture.b, 
+                        app->BGtetroTextures[i].tex, false
+                    );
+                }
+            }
+        }
+
+        //draw texture to main texture
+        SDL_SetRenderTarget(app->renderer, app->startBGTexture);
+
+        SDL_RenderTexture(app->renderer, app->BGtetroTextures[i].tex, NULL, &app->BGtetroTextures[i].dest);
+
+        SDL_SetRenderTarget(app->renderer, NULL);
+
+
+        /*//allocate memory
         app->backgroundTets[i] = calloc(1, sizeof(tetromino));
 
         //initalise values
@@ -343,12 +391,34 @@ void initStartBackground(appContext *app) {
                     );
                 }
             }
-        }
+        }*/
     }
 }
 
 void updateStartBackground(appContext *app) {
     //clear the texture
+    SDL_SetRenderTarget(app->renderer, app->startBGTexture);
+    SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
+    SDL_RenderClear(app->renderer);
+
+    int randOpp = app->width / TETROMINO_BLOCK_SIZE + 1;
+
+    for (int i = 0; i < MAX_BG_TETROES; i++) {
+        //calculate update
+        app->BGtetroTextures[i].dest.y += 5;
+
+        if (app->BGtetroTextures[i].dest.y >= app->height) {
+            app->BGtetroTextures[i].dest.x = SDL_rand(randOpp) * TETROMINO_BLOCK_SIZE;
+            app->BGtetroTextures[i].dest.y = 0;
+        }
+
+        //render tetro
+        SDL_RenderTexture(app->renderer, app->BGtetroTextures[i].tex, NULL, &app->BGtetroTextures[i].dest);
+    }
+
+    SDL_SetRenderTarget(app->renderer, NULL);
+
+    /*//clear the texture
     SDL_SetRenderTarget(app->renderer, app->startBGTexture);
     SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
     SDL_RenderClear(app->renderer);
@@ -366,27 +436,9 @@ void updateStartBackground(appContext *app) {
 
         //render tetro
         renderStartBackgroundTetro(app, i);
-    }
+    }*/
 }
 
 void renderStartBackgroundTetro(struct appContext *app, int indx) {
-    for (int y = 0; y < 4; y++) {
-        for (int x = 0; x < 4; x++) {
-            if (app->backgroundTets[indx]->blocks[y][x].active) {
-                SDL_FRect Brect = {
-                    app->backgroundTets[indx]->x + (x * TETROMINO_BLOCK_SIZE),
-                    app->backgroundTets[indx]->y + (y * TETROMINO_BLOCK_SIZE),
-                    TETROMINO_BLOCK_SIZE,
-                    TETROMINO_BLOCK_SIZE
-                };
-                displayBlockToTexture(
-                    app, Brect, 
-                    app->backgroundTets[indx]->r, 
-                    app->backgroundTets[indx]->g, 
-                    app->backgroundTets[indx]->b, 
-                    app->startBGTexture, false
-                );
-            }
-        }
-    }
+    
 }

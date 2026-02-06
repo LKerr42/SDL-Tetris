@@ -387,6 +387,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             app.statsTexture.dest.x = (app.width / 2) - (app.statsTexture.dest.w/2);
             app.statsTexture.dest.y = (app.height / 2) - (app.statsTexture.dest.h/2);
 
+            //start background texture
+            app.startBGTexture = SDL_CreateTexture(
+                app.renderer,
+                SDL_PIXELFORMAT_RGBA32,
+                SDL_TEXTUREACCESS_TARGET,
+                app.width,
+                app.height
+            );
+
             break;
         }
     }
