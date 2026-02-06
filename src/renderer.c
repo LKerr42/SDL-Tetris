@@ -357,29 +357,35 @@ void updateStartBackground(appContext *app) {
     int randOpp = app->width / TETROMINO_BLOCK_SIZE + 1;
 
     for (int i = 0; i < MAX_BG_TETROES; i++) {
+        //calculare update
         app->backgroundTets[i]->y += 5;
         if (app->backgroundTets[i]->y >= app->height) {
             app->backgroundTets[i]->x = SDL_rand(randOpp) * TETROMINO_BLOCK_SIZE;
             app->backgroundTets[i]->y = 0;
         }
 
-        for (int y = 0; y < 4; y++) {
-            for (int x = 0; x < 4; x++) {
-                if (app->backgroundTets[i]->blocks[y][x].active) {
-                    SDL_FRect Brect = {
-                        app->backgroundTets[i]->x + (x * TETROMINO_BLOCK_SIZE),
-                        app->backgroundTets[i]->y + (y * TETROMINO_BLOCK_SIZE),
-                        TETROMINO_BLOCK_SIZE,
-                        TETROMINO_BLOCK_SIZE
-                    };
-                    displayBlockToTexture(
-                        app, Brect, 
-                        app->backgroundTets[i]->r, 
-                        app->backgroundTets[i]->g, 
-                        app->backgroundTets[i]->b, 
-                        app->startBGTexture, false
-                    );
-                }
+        //render tetro
+        renderStartBackgroundTetro(app, i);
+    }
+}
+
+void renderStartBackgroundTetro(struct appContext *app, int indx) {
+    for (int y = 0; y < 4; y++) {
+        for (int x = 0; x < 4; x++) {
+            if (app->backgroundTets[indx]->blocks[y][x].active) {
+                SDL_FRect Brect = {
+                    app->backgroundTets[indx]->x + (x * TETROMINO_BLOCK_SIZE),
+                    app->backgroundTets[indx]->y + (y * TETROMINO_BLOCK_SIZE),
+                    TETROMINO_BLOCK_SIZE,
+                    TETROMINO_BLOCK_SIZE
+                };
+                displayBlockToTexture(
+                    app, Brect, 
+                    app->backgroundTets[indx]->r, 
+                    app->backgroundTets[indx]->g, 
+                    app->backgroundTets[indx]->b, 
+                    app->startBGTexture, false
+                );
             }
         }
     }

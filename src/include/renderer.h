@@ -136,10 +136,18 @@ void initStartBackground(struct appContext *app);
 
 
 /**
- * Update and render to the texture the background for the start card background
+ * Update and call to render to the texture the background for the start card background
  * 
  * \param *app  Pointer to the app context.
  */
 void updateStartBackground(struct appContext *app);
+
+/**
+ * Render a particular tetromino for the start card background
+ * 
+ * \param *app  Pointer to the app context.
+ * \param indx  Array index of the particular tetromino.
+ */
+void renderStartBackgroundTetro(struct appContext *app, int indx);
 
 #endif

@@ -515,7 +515,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             lastPressDown = 0;
         }
 
-        //Update snow for Xmas theme
+        //Update snow for the themes
         if (now - lastSnowFall >= 80) {
             updateSnow(&app);
             lastSnowFall = now;
